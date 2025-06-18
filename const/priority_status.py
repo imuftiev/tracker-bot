@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class PriorityStatus(Enum):
-    CRITICAL = 'CRITICAL'
-    HIGH = 'HIGH'
-    MEDIUM = 'MEDIUM'
-    LOW = 'LOW'
+    CRITICAL = 'Критический'
+    HIGH = 'Высокий'
+    MEDIUM = 'Средний'
+    LOW = 'Низкий'
