@@ -14,3 +14,7 @@ class AddEventState(StatesGroup):
     adding_chat_name = State()
     telegram_chat_id = State()
     user_id = State()
+
+
+class RepeatableEventState(StatesGroup):
+    adding_day = State()
