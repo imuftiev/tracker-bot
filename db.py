@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, time
 
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Boolean, DATETIME, Nullable, BigInteger
+from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Boolean, BigInteger, Time, text, ARRAY
 from sqlalchemy.orm import declarative_base, relationship
 from dotenv import load_dotenv
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
@@ -30,7 +30,7 @@ class Event(Base):
     __tablename__ = 'events'
 
     id = Column(Integer, primary_key=True)
-    title = Column(String(20), nullable=False)
+    title = Column(String(50), nullable=False)
     description = Column(Text, nullable=True)
     status = Column(PgEnum(EventStatus, name='event_status_enum', create_type=False), nullable=False,
                     default=EventStatus.TO_DO)
@@ -41,8 +41,14 @@ class Event(Base):
     repeatable = Column(Boolean, nullable=False, default=False)
     sent = Column(Boolean, nullable=False, default=False)
     remind_at = Column(DateTime, nullable=False, default=datetime.now)
+    remind_time = Column(
+        Time,
+        nullable=False,
+        server_default=text("'08:00:00'")
+    )
     repeat_type = Column(PgEnum(RepeatType, name='repeat_type_enum', create_type=False), nullable=False,
                          default=RepeatType.ONLY_DAY)
+    days_of_week = Column(ARRAY(String))
     chat_name = Column(String(10), nullable=True, default=None)
     telegram_chat_id = Column(BigInteger, nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
