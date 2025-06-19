@@ -2,6 +2,6 @@ from enum import Enum
 
 
 class EventStatus(Enum):
-    TO_DO = 'TO_DO'
-    PROCESSING = 'PROCESSING'
-    DONE = 'DONE'
+    TO_DO = 'Выполнить'
+    PROCESSING = 'Обрабатывается'
+    DONE = 'Выполнено'
