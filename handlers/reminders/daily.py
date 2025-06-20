@@ -9,7 +9,7 @@ from aiogram import Bot
 Session = sessionmaker(bind=engine)
 
 
-async def daily_reminder_worker(bot: Bot):
+async def daily_reminder(bot: Bot):
     while True:
         try:
             now = datetime.now().time().replace(second=0, microsecond=0)

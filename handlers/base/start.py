@@ -8,7 +8,6 @@ from config import BotConfig
 from sqlalchemy.orm import sessionmaker
 
 from db import engine, User, Event
-from keyboards.for_event_type import get_kb
 
 config = BotConfig()
 router = Router()
@@ -21,7 +20,7 @@ async def cmd_start(message: Message):
         try:
             if (session.query(User).filter_by(telegram_user_id=message.from_user.id).first()
                     or session.query(Event).filter_by(telegram_chat_id=message.chat.id).first()):
-                await message.answer(config.start_text_user, reply_markup=get_kb())
+                await message.answer(config.start_text_user)
             else:
                 new_user = User(telegram_user_id=message.from_user.id, username=message.from_user.username)
                 session.add(new_user)

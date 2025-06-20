@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime
 
 from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Boolean, BigInteger, Time, text, ARRAY
 from sqlalchemy.orm import declarative_base, relationship
@@ -7,9 +7,9 @@ from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy import DateTime
 import os
 
-from const.event_status import EventStatus
-from const.priority_status import PriorityStatus
-from const.repeatable_type import RepeatType
+from const.event.status import Status
+from const.event.priority import Priority
+from const.event.repeatable import RepeatType
 
 load_dotenv()
 
@@ -29,13 +29,21 @@ class User(Base):
 class Event(Base):
     __tablename__ = 'events'
 
+    def __str__(self):
+        return (
+            f"Событие: {self.title or '—'}\n"
+            f"Описание: {self.description or '—'}\n"
+            f"Статус: {self.status if self.status else '—'}\n"
+            f"Приоритет: {self.priority if self.priority else '—'}\n"
+        )
+
     id = Column(Integer, primary_key=True)
     title = Column(String(50), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(PgEnum(EventStatus, name='event_status_enum', create_type=False), nullable=False,
-                    default=EventStatus.TO_DO)
-    priority = Column(PgEnum(PriorityStatus, name='priority_status_enum', create_type=False), nullable=False,
-                      default=PriorityStatus.MEDIUM)
+    status = Column(PgEnum(Status, name='status_enum', create_type=False), nullable=False,
+                    default=Status.TO_DO)
+    priority = Column(PgEnum(Priority, name='priority_enum', create_type=False), nullable=False,
+                      default=Priority.MEDIUM)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
     repeatable = Column(Boolean, nullable=False, default=False)

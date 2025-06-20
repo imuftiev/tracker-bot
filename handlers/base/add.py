@@ -144,7 +144,7 @@ async def event_repeatable(callback: types.CallbackQuery, state: FSMContext):
 async def event_remind_at(message: Message, state: FSMContext):
     try:
         now = datetime.now()
-        remind_time = await set_time_remind(message, state)
+        remind_time = await set_time_remind(message)
         if remind_time is None:
             return
         if remind_time < now:

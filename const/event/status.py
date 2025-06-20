@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class EventStatus(Enum):
+class Status(Enum):
     TO_DO = 'Выполнить'
     PROCESSING = 'Обрабатывается'
     DONE = 'Выполнено'

@@ -6,7 +6,7 @@ from aiogram import Bot
 
 Session = sessionmaker(bind=engine)
 
-async def reminder_worker(bot : Bot):
+async def reminder_worker(bot: Bot):
     while True:
         try:
             now = datetime.now(timezone.utc)
@@ -19,10 +19,10 @@ async def reminder_worker(bot : Bot):
                 for event in events:
                     await bot.send_message(
                         chat_id=event.telegram_chat_id,
-                        text=(f"🔔<strong> Событие: </strong> {event.title}\n"
-                              f"📝<strong> Описание: </strong> {event.description}\n"
-                              f"❓<strong> Статус: </strong> {event.status.value}\n"
-                              f"✔️<strong> Приоритет: </strong> {event.priority.value}\n"),
+                        text=(f"🔔<strong> Событие: </strong> <i>{event.title}</i>\n"
+                              f"📝<strong> Описание: </strong> <i>{event.description}</i>\n"
+                              f"❓<strong> Статус: </strong> <i>{event.status.value}</i>\n"
+                              f"✔️<strong> Приоритет: </strong> <i>{event.priority.value}</i>\n"),
                         parse_mode="HTML"
                     )
 
