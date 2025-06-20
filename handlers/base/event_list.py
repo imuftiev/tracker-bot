@@ -16,7 +16,7 @@ Session = sessionmaker(bind=engine)
 
 @router.message(StateFilter(None), Command("list"))
 async def event_list_handler(message: Message):
-    await message.answer(text= "Вывод", reply_markup=keyboards.events_list_inline_kb())
+    await message.answer(text="Выбор ...",reply_markup=keyboards.events_list_inline_kb())
 
 
 @router.callback_query(F.data == 'all')

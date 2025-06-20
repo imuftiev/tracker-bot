@@ -1,10 +1,9 @@
 import logging
 from datetime import datetime
-from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 
-async def set_time_remind(message: Message, state : FSMContext) -> datetime | None:
+async def set_time_remind(message: Message) -> datetime | None:
     try:
         time_input = message.text.strip()
 
