@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 
 from config import BotConfig
 from db import Event
-from handlers import start_handler, help_handler, add_handler
-from handlers import reminder_worker as rw
-from handlers import daily_remind_worker as drw
+from handlers.base import start, help, event_list, add, default
+from handlers.reminders import daily as drw, scheduled as rw
+from handlers.keyboard import inline
 
 load_dotenv()
 
@@ -23,9 +23,11 @@ event = Event()
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp.include_routers(start_handler.router, help_handler.router, add_handler.router)
+    dp.include_routers(start.router, help.router,
+                       add.router, event_list.router,
+                       inline.router, default.router)
     asyncio.create_task(rw.reminder_worker(bot))
-    asyncio.create_task(drw.daily_reminder_worker(bot))
+    # asyncio.create_task(drw.daily_reminder(bot))
     await dp.start_polling(bot)
 
 
