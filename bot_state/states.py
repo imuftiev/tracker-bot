@@ -12,9 +12,16 @@ class AddEventState(StatesGroup):
     adding_remind_at = State()
     adding_repeat_type = State()
     adding_chat_name = State()
+
+    adding_private = State()
+    adding_group = State()
     telegram_chat_id = State()
     user_id = State()
 
 
 class RepeatableEventState(StatesGroup):
     adding_day = State()
+
+
+class GroupLinkState(StatesGroup):
+    attach_link = State()

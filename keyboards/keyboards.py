@@ -3,6 +3,8 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram import types
 
 import config
+from bot_state.states import AddEventState
+from const.event.chat import Chat
 from const.event.status import Status
 from const.event.priority import Priority
 from const.event.repeatable import RepeatType, RepeatDays
@@ -90,4 +92,18 @@ def events_list_inline_kb() -> InlineKeyboardMarkup:
     builder.add(types.InlineKeyboardButton(text="Все", callback_data="all"))
     builder.row(
         types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value), width=8)
+    return builder.as_markup(resize_keyboard=True)
+
+
+def chat_type_inline_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        types.InlineKeyboardButton(text="В этот чат", callback_data=Chat.PRIVATE.value)
+    )
+    builder.row(
+        types.InlineKeyboardButton(text="В группу (бот должен там быть)", callback_data=Chat.GROUP.value)
+    )
+    builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
+                types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
+                width=8)
     return builder.as_markup(resize_keyboard=True)

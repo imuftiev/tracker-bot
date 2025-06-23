@@ -24,7 +24,17 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     telegram_user_id = Column(Integer, unique=True, nullable=False)
     username = Column(String(30), nullable=False)
-    events = relationship("Event", back_populates="user")
+
+    events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
+    groups = relationship("Group", back_populates="user", cascade="all, delete-orphan")
+
+class Group(Base):
+    __tablename__ = "groups"
+    id = Column(Integer, primary_key=True)
+    telegram_group_id = Column(BigInteger, unique=False, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="groups")
+    events = relationship("Event", back_populates="group", cascade="all, delete-orphan")
 
 class Event(Base):
     __tablename__ = 'events'
@@ -58,6 +68,8 @@ class Event(Base):
                          default=RepeatType.ONLY_DAY)
     days_of_week = Column(ARRAY(String))
     chat_name = Column(String(10), nullable=True, default=None)
-    telegram_chat_id = Column(BigInteger, nullable=True)
+    telegram_chat_id = Column(BigInteger, nullable=False)
+    group_id = Column(Integer, ForeignKey('groups.id'), nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     user = relationship("User", back_populates="events")
+    group = relationship("Group", back_populates="events")
