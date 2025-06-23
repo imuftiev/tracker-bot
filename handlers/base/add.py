@@ -9,8 +9,9 @@ from sqlalchemy.orm import sessionmaker
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
+from const.callback.callback_types import InlineButtonType
 from const.event.chat import Chat
-from handlers.keyboard.inline import back
+from handlers.keyboard.inline import back, cancel_button
 from handlers.reminders.time import set_time_remind
 
 from const.event.status import Status
@@ -22,13 +23,11 @@ from aiogram import F
 from bot_state.states import AddEventState, RepeatableEventState
 from config import BotConfig
 from db import Event, engine, User, Group
-from keyboards.keyboards import cancel_button, cancel_back_button
+from keyboards.keyboards import cancel_back_button
 
 config = BotConfig()
 router = Router()
 Session = sessionmaker(bind=engine)
-new_event = Event()
-new_group = Group()
 
 """
     Для реализации возможности диалога с ботом и сохранением его состояния был использован 
@@ -69,7 +68,7 @@ async def cmd_add(message: Message, state: FSMContext):
 async def event_title(message: Message, state: FSMContext):
     try:
         await push_state(state, AddEventState.adding_description)
-        new_event.title = message.text
+        await state.update_data(title=message.text)
         await message.answer(
             text="Введите описание события", reply_markup=cancel_back_button()
         )
@@ -83,8 +82,9 @@ async def event_title(message: Message, state: FSMContext):
 @router.message(F.text, AddEventState.adding_description)
 async def event_description(message: Message, state: FSMContext):
     try:
+        await message.edit_reply_markup(reply_markup=None)
         await push_state(state, AddEventState.adding_status)
-        new_event.description = message.text
+        await state.update_data(description=message.text)
         await message.answer(
             text="Выберите статус события", reply_markup=keyboards.status_inline_kb()
         )
@@ -98,15 +98,15 @@ async def event_description(message: Message, state: FSMContext):
 @router.callback_query(F.data, AddEventState.adding_status)
 async def event_status(callback: types.CallbackQuery, state: FSMContext):
     try:
-        if callback.data == "cancel":
+        if callback.data == InlineButtonType.CANCEL.value:
             await cancel_button(callback, state)
             return
-        if callback.data == "back":
+        if callback.data == InlineButtonType.RETURN.value:
             await back(callback, state)
             return
 
         await push_state(state, AddEventState.adding_repeatable)
-        new_event.status = Status(callback.data)
+        await state.update_data(status=callback.data)
         await callback.message.edit_reply_markup(reply_markup=None)
         await callback.message.answer(
             text="Когда напомнить про событие",
@@ -122,15 +122,15 @@ async def event_status(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data, AddEventState.adding_repeatable)
 async def event_repeatable(callback: types.CallbackQuery, state: FSMContext):
     try:
-        if callback.data == "cancel":
+        if callback.data == InlineButtonType.CANCEL.value:
             await cancel_button(callback, state)
             return
-        if callback.data == "back":
+        if callback.data == InlineButtonType.RETURN.value:
             await back(callback, state)
             return
 
-        new_event.repeat_type = RepeatType(callback.data)
-        new_event.repeatable = True
+        await state.update_data(repeat_type=RepeatType(callback.data))
+        await state.update_data(repeatable=True)
         await push_state(state, AddEventState.adding_remind_at)
         await callback.message.edit_reply_markup(reply_markup=None)
         await callback.message.answer("Напишите время напоминания в формате '12:30' или '1230'")
@@ -150,7 +150,8 @@ async def event_remind_at(message: Message, state: FSMContext):
             return
         if remind_time < now:
             remind_time += timedelta(days=1)
-        new_event.remind_at = remind_time
+
+        await state.update_data(remind_at=remind_time)
         await push_state(state, AddEventState.adding_priority)
         await message.answer(text="Приоритет события",
                              reply_markup=keyboards.priority_inline_kb())
@@ -159,16 +160,17 @@ async def event_remind_at(message: Message, state: FSMContext):
 
 
 @router.callback_query(F.data, AddEventState.adding_priority)
-async def event_priority(callback: types.CallbackQuery, state:FSMContext):
+async def event_priority(callback: types.CallbackQuery, state: FSMContext):
     with Session() as session:
         try:
             await callback.message.edit_reply_markup(reply_markup=None)
-            new_event.priority = Priority(callback.data)
-            new_event.user_id = session.query(User).filter_by(telegram_user_id=callback.from_user.id).first().id
+            await state.update_data(priority=Priority(callback.data))
+            await state.update_data(
+                user_id=session.query(User).filter_by(telegram_user_id=callback.from_user.id).first().id)
 
             await callback.message.answer(text="Куда напомнить о событии?",
                                           reply_markup=keyboards.chat_type_inline_kb())
-            await state.clear()
+            await push_state(state, AddEventState.adding_private)
         except Exception as e:
             logging.error(e)
 
@@ -178,21 +180,39 @@ async def event_group_id(callback: types.CallbackQuery, state: FSMContext):
     try:
         await callback.message.edit_reply_markup(reply_markup=None)
         await callback.message.answer(text="Введите ID группы")
-        await push_state(state, AddEventState.adding_private)
+        await push_state(state, AddEventState.adding_group)
     except Exception as e:
         logging.error(e)
 
 
-@router.message(F.text, AddEventState.adding_private)
+@router.message(F.text, AddEventState.adding_group)
 async def event_group(message: Message, state: FSMContext):
     with Session() as session:
         try:
-            new_group.telegram_group_id = message.text
-            new_group.user_id = session.query(User).filter_by(telegram_user_id=message.from_user.id).first().id
+            data = await state.get_data()
+            user = session.query(User).filter_by(telegram_user_id=message.from_user.id).first()
+
+            new_group = Group(
+                telegram_group_id=int(message.text),
+                user_id=user.id,
+            )
             session.add(new_group)
-            session.commit()
-            new_event.telegram_chat_id = message.chat.id
-            new_event.group_id = new_group.id
+            session.flush()
+
+            new_event = Event(
+                title=data.get("title"),
+                description=data.get("description"),
+                status=Status(data.get("status")),
+                repeatable=True,
+                repeat_type=RepeatType(data.get("repeat_type")),
+                remind_at=data.get("remind_at"),
+                remind_time=data.get("remind_at").time(),
+                priority=Priority(data.get("priority")),
+                telegram_chat_id=message.chat.id,
+                group_id=new_group.id,
+                user_id=user.id
+            )
+
             session.add(new_event)
             session.commit()
             await state.clear()
@@ -205,12 +225,28 @@ async def event_group(message: Message, state: FSMContext):
 async def event_private(callback: types.CallbackQuery, state: FSMContext):
     with Session() as session:
         try:
-            await callback.message.edit_reply_markup(reply_markup=None)
-            new_event.telegram_chat_id = callback.message.chat.id
+            data = await state.get_data()
+            user = session.query(User).filter_by(telegram_user_id=callback.from_user.id).first()
+
+            new_event = Event(
+                title=data.get("title"),
+                description=data.get("description"),
+                status=Status(data.get("status")),
+                repeatable=True,
+                repeat_type=RepeatType(data.get("repeat_type")),
+                remind_at=data.get("remind_at"),
+                remind_time=data.get("remind_at").time(),
+                priority=Priority(data.get("priority")),
+                telegram_chat_id=callback.message.chat.id,
+                user_id=user.id
+            )
+
             session.add(new_event)
             session.commit()
             await state.clear()
+            await callback.message.edit_reply_markup(reply_markup=None)
             await callback.message.answer(text=config.success_text)
+
         except Exception as e:
             logging.error(e)
 
@@ -225,6 +261,6 @@ async def every_day_event(state: FSMContext):
 
 @router.callback_query(F.data == RepeatDays.ALL_DAYS.value)
 async def all_days_event(callback: CallbackQuery, state: FSMContext):
-    new_event.repeat_type = RepeatType(callback)
+    await state.update_data(repeat_type=RepeatType(callback))
     await callback.message.answer(text="Напишите время напоминания в формате '12:30' или '1230'")
     await push_state(state, AddEventState.adding_remind_at)

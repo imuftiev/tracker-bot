@@ -37,15 +37,22 @@ async def back(callback: CallbackQuery, state: FSMContext):
     await state.update_data(history=history)
     await state.set_state(previous_state)
 
-    if previous_state == AddEventState.adding_title:
-        await callback.message.edit_text("Введите название события")
-    elif previous_state == AddEventState.adding_description:
-        await callback.message.edit_text("Введите описание события")
-    elif previous_state == AddEventState.adding_status:
-        await callback.message.edit_text(
-            "Выберите статус события", reply_markup=keyboards.status_inline_kb())
-    elif previous_state == AddEventState.adding_repeatable:
-        await callback.message.edit_text(
-            "Когда напомнить про событие", reply_markup=keyboards.repeatable_inline_kb())
-
+    match previous_state:
+        case AddEventState.adding_title:
+            await callback.message.edit_text("Введите название события")
+            return
+        case AddEventState.adding_description:
+            await callback.message.edit_text("Введите описание события")
+            return
+        case AddEventState.adding_status:
+            await callback.message.edit_text("Выберите статус события", reply_markup=keyboards.status_inline_kb())
+            return
+        case AddEventState.adding_repeatable:
+            await callback.message.edit_text(
+                "Когда напомнить про событие", reply_markup=keyboards.repeatable_inline_kb())
+            return
+        case AddEventState.adding_priority:
+            await callback.message.edit_text(
+                "Приоритет события", reply_markup=keyboards.priority_inline_kb())
+            return
     await callback.answer()
