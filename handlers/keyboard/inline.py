@@ -39,7 +39,7 @@ async def back(callback: CallbackQuery, state: FSMContext):
 
     match previous_state:
         case AddEventState.adding_title:
-            await callback.message.edit_text(text="Введите название события",reply_markup=keyboards.cancel_button())
+            await callback.message.edit_text(text="Введите название события", reply_markup=keyboards.cancel_button())
             return
         case AddEventState.adding_description:
             await callback.message.edit_text("Введите описание события", reply_markup=keyboards.cancel_back_button())
@@ -53,7 +53,7 @@ async def back(callback: CallbackQuery, state: FSMContext):
             return
         case AddEventState.adding_remind_at:
             await callback.message.edit_text("Напишите время напоминания в формате '12:30' или '1230'",
-                                          reply_markup=keyboards.cancel_back_button())
+                                             reply_markup=keyboards.cancel_back_button())
             return
         case AddEventState.adding_priority:
             await callback.message.edit_text(

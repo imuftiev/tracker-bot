@@ -1,24 +1,16 @@
-from aiogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup
-from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
 
 import config
-from bot_state.states import AddEventState
 from const.event.chat import Chat
+from const.event.delete import DeleteEvent
 from const.event.status import Status
 from const.event.priority import Priority
 from const.event.repeatable import RepeatType, RepeatDays
 from const.callback.callback_types import InlineButtonType
 
 config = config.BotConfig()
-
-
-def get_kb() -> ReplyKeyboardMarkup:
-    kb = ReplyKeyboardBuilder()
-    kb.button(text="1")
-    kb.button(text="2")
-    kb.adjust(2)
-    return kb.as_markup(resize_keyboard=True)
 
 
 def cancel_button() -> InlineKeyboardMarkup:
@@ -107,5 +99,18 @@ def chat_type_inline_kb() -> InlineKeyboardMarkup:
     )
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
                 types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
+                width=8)
+    return builder.as_markup(resize_keyboard=True)
+
+
+def delete_type_inline_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        types.InlineKeyboardButton(text="Все", callback_data=DeleteEvent.DELETE_ALL.value),
+    )
+    builder.row(
+        types.InlineKeyboardButton(text="Отдельные", callback_data=DeleteEvent.DELETE.value)
+    )
+    builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
                 width=8)
     return builder.as_markup(resize_keyboard=True)

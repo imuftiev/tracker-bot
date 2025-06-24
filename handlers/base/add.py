@@ -140,7 +140,8 @@ async def event_repeatable(callback: types.CallbackQuery, state: FSMContext):
 
         await push_state(state, AddEventState.adding_remind_at)
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer("Напишите время напоминания в формате '12:30' или '1230'", reply_markup=keyboards.cancel_back_button())
+        await callback.message.answer("Напишите время напоминания в формате '12:30' или '1230'",
+                                      reply_markup=keyboards.cancel_back_button())
     except Exception as e:
         logging.error(f"Ошибка в event_repeatable: {e}")
 

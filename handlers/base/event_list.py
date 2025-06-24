@@ -8,7 +8,7 @@ from aiogram import F
 from keyboards import keyboards
 
 from config import BotConfig
-from db import engine, Event, User, Group
+from db import engine, Event, Group
 
 config = BotConfig()
 router = Router()
@@ -23,6 +23,7 @@ async def event_list_handler(message: Message):
 @router.callback_query(F.data == 'all')
 async def todo_status_events_list(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(reply_markup=None)
+    print(callback.message.chat.id)
 
     with Session() as session:
         chat = callback.message.chat
@@ -34,7 +35,7 @@ async def todo_status_events_list(callback: types.CallbackQuery):
             events = session.query(Event).filter_by(telegram_chat_id=chat_id).all()
         else:
             if not groups:
-                await callback.message.answer("Группа не зарегистрирована.")
+                await callback.message.answer("В группе нет событий.")
                 return
 
             events = []
@@ -63,31 +64,29 @@ async def priority_list_handler(callback: types.CallbackQuery):
 async def priority_list_status_handler(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(reply_markup=None)
 
-    with Session() as session:
+    with (Session() as session):
         priority_value = Priority(callback.data)
         chat_id = callback.message.chat.id
 
         if callback.message.chat.type == "private":
-            user = session.query(User).filter_by(telegram_user_id=callback.from_user.id).first()
-            if not user:
-                await callback.message.answer("Пользователь не найден.")
-                return
-
             events = session.query(Event).filter(
-                Event.user_id == user.id,
-                Event.priority == priority_value,
-                Event.group_id.is_(None)
-            ).all()
-        else:
-            group = session.query(Group).filter_by().first()
-            if not group:
-                await callback.message.answer("Группа не зарегистрирована.")
-                return
-
-            events = session.query(Event).filter(
-                Event.group_id == group.id,
+                Event.telegram_chat_id == chat_id,
                 Event.priority == priority_value
             ).all()
+
+        else:
+            groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
+            if not groups:
+                await callback.message.answer("В группе нет событий.")
+                return
+
+            events = []
+            for group in groups:
+                group_events = session.query(Event).filter(
+                    Event.group_id == group.id,
+                    Event.priority == priority_value
+                ).all()
+                events.extend(group_events)
 
         if not events:
             await callback.message.answer("Нет событий с таким приоритетом.")

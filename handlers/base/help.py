@@ -1,5 +1,6 @@
 import logging
 
+from aiogram.enums import ParseMode
 from aiogram.types import Message
 from aiogram.filters import Command
 
@@ -17,6 +18,6 @@ Session = sessionmaker(bind=engine)
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
     try:
-        await message.answer(config.help_text)
+        await message.answer(text=config.assembled_text, parse_mode=ParseMode.HTML)
     except Exception as e:
         logging.error(e)
