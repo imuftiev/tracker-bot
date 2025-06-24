@@ -19,6 +19,7 @@ from const.event.priority import Priority
 from const.event.repeatable import RepeatType, RepeatDays
 from keyboards import keyboards
 from aiogram import F
+from handlers.filter.filter import IsPrivate
 
 from bot_state.states import AddEventState, RepeatableEventState
 from config import BotConfig
@@ -50,7 +51,7 @@ async def push_state(state: FSMContext, new_state):
 """ Обработчик команды /add """
 
 
-@router.message(StateFilter(None), Command("add"))
+@router.message(StateFilter(None), Command("add"), IsPrivate())
 async def cmd_add(message: Message, state: FSMContext):
     try:
         await push_state(state, AddEventState.adding_title)
@@ -82,7 +83,6 @@ async def event_title(message: Message, state: FSMContext):
 @router.message(F.text, AddEventState.adding_description)
 async def event_description(message: Message, state: FSMContext):
     try:
-        await message.edit_reply_markup(reply_markup=None)
         await push_state(state, AddEventState.adding_status)
         await state.update_data(description=message.text)
         await message.answer(
@@ -119,7 +119,10 @@ async def event_status(callback: types.CallbackQuery, state: FSMContext):
 """ Обработчик Callback вызова – Когда напоминать про событие"""
 
 
-@router.callback_query(F.data, AddEventState.adding_repeatable)
+@router.callback_query(
+    F.data.in_([r.value for r in RepeatType] + [InlineButtonType.CANCEL.value, InlineButtonType.RETURN.value]),
+    AddEventState.adding_repeatable
+)
 async def event_repeatable(callback: types.CallbackQuery, state: FSMContext):
     try:
         if callback.data == InlineButtonType.CANCEL.value:
@@ -128,12 +131,16 @@ async def event_repeatable(callback: types.CallbackQuery, state: FSMContext):
         if callback.data == InlineButtonType.RETURN.value:
             await back(callback, state)
             return
+        if callback.data == RepeatType.ONLY_DAY.value:
+            await state.update_data(repeatable=False)
+        else:
+            await state.update_data(repeatable=True)
 
         await state.update_data(repeat_type=RepeatType(callback.data))
-        await state.update_data(repeatable=True)
+
         await push_state(state, AddEventState.adding_remind_at)
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer("Напишите время напоминания в формате '12:30' или '1230'")
+        await callback.message.answer("Напишите время напоминания в формате '12:30' или '1230'", reply_markup=keyboards.cancel_back_button())
     except Exception as e:
         logging.error(f"Ошибка в event_repeatable: {e}")
 
@@ -152,14 +159,17 @@ async def event_remind_at(message: Message, state: FSMContext):
             remind_time += timedelta(days=1)
 
         await state.update_data(remind_at=remind_time)
-        await push_state(state, AddEventState.adding_priority)
         await message.answer(text="Приоритет события",
                              reply_markup=keyboards.priority_inline_kb())
+        await push_state(state, AddEventState.adding_priority)
     except Exception as e:
         logging.error(e)
 
 
-@router.callback_query(F.data, AddEventState.adding_priority)
+@router.callback_query(
+    F.data.in_([p.value for p in Priority]),
+    AddEventState.adding_priority
+)
 async def event_priority(callback: types.CallbackQuery, state: FSMContext):
     with Session() as session:
         try:
@@ -203,11 +213,12 @@ async def event_group(message: Message, state: FSMContext):
                 title=data.get("title"),
                 description=data.get("description"),
                 status=Status(data.get("status")),
-                repeatable=True,
+                repeatable=data.get("repeatable"),
                 repeat_type=RepeatType(data.get("repeat_type")),
                 remind_at=data.get("remind_at"),
                 remind_time=data.get("remind_at").time(),
                 priority=Priority(data.get("priority")),
+                chat_type=Chat.GROUP.value,
                 telegram_chat_id=message.chat.id,
                 group_id=new_group.id,
                 user_id=user.id
@@ -232,11 +243,12 @@ async def event_private(callback: types.CallbackQuery, state: FSMContext):
                 title=data.get("title"),
                 description=data.get("description"),
                 status=Status(data.get("status")),
-                repeatable=True,
+                repeatable=data.get("repeatable"),
                 repeat_type=RepeatType(data.get("repeat_type")),
                 remind_at=data.get("remind_at"),
                 remind_time=data.get("remind_at").time(),
                 priority=Priority(data.get("priority")),
+                chat_type=Chat.PRIVATE.value,
                 telegram_chat_id=callback.message.chat.id,
                 user_id=user.id
             )

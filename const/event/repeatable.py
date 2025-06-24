@@ -9,6 +9,13 @@ class RepeatType(Enum):
     ONLY_DAY = 'Только сегодня'
     IN_PARTICULAR_DAY = 'Определенный день'
 
+
 class RepeatDays(Enum):
     ALL_DAYS = 'Все дни'
-    EXACT_DAY = 'Определенный день'
+    MONDAY = 'Понедельник'
+    TUESDAY = 'Вторник'
+    WEDNESDAY = 'Среда'
+    THURSDAY = 'Четверг'
+    FRIDAY = 'Пятница'
+    SATURDAY = 'Суббота'
+    SUNDAY = 'Воскресенье'

@@ -18,10 +18,10 @@ async def link_cmd(message: Message, state: FSMContext):
     await message.answer(text="В какую группу присылать уведомления?\nID:", reply_markup=keyboards.cancel_button())
     await state.set_state(GroupLinkState.attach_link)
 
+
 @router.message(F.text, GroupLinkState.attach_link)
 async def attach_link_cmd(message: Message, state: FSMContext):
     with Session() as session:
-
         group.telegram_group_id = message.text
         session.add(group)
         session.commit()

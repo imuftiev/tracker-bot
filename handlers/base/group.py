@@ -9,7 +9,3 @@ router = Router()
 
 # @router.callback_query(F.data, AddEventState.adding_group)
 # async def attach_group(callback : types.CallbackQuery ,state : FSMContext):
-
-
-
-

@@ -71,6 +71,7 @@ def priority_inline_kb() -> InlineKeyboardMarkup:
     ]
     for InlineKeyboardButton in inline_keyboard:
         builder.row(InlineKeyboardButton)
+    builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value))
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value))
     return builder.as_markup(resize_keyboard=True)
 
@@ -81,7 +82,8 @@ def status_inline_kb() -> InlineKeyboardMarkup:
     builder.add(types.InlineKeyboardButton(text="В процессе", callback_data=Status.PROCESSING.value))
     builder.add(types.InlineKeyboardButton(text="Выполнено", callback_data=Status.DONE.value))
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
-                types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value), width=8)
+                types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
+                width=8)
     return builder.as_markup(resize_keyboard=True)
 
 

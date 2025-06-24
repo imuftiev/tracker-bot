@@ -28,6 +28,7 @@ class User(Base):
     events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
     groups = relationship("Group", back_populates="user", cascade="all, delete-orphan")
 
+
 class Group(Base):
     __tablename__ = "groups"
     id = Column(Integer, primary_key=True)
@@ -36,15 +37,17 @@ class Group(Base):
     user = relationship("User", back_populates="groups")
     events = relationship("Event", back_populates="group", cascade="all, delete-orphan")
 
+
 class Event(Base):
     __tablename__ = 'events'
 
     def __str__(self):
         return (
-            f"Событие: {self.title or '—'}\n"
-            f"Описание: {self.description or '—'}\n"
-            f"Статус: {self.status if self.status else '—'}\n"
-            f"Приоритет: {self.priority if self.priority else '—'}\n"
+            f"<b>📎 Событие:</b> <code>{self.id}</code>\n"
+            f"<b>🔔 Название:</b> {self.title}\n"
+            f"<b>📝 Описание:</b> {self.description or '—'}\n"
+            f"<b>📌 Статус:</b> {self.status.value}\n"
+            f"<b>⚡ Приоритет:</b> {self.priority.value}\n"
         )
 
     id = Column(Integer, primary_key=True)
@@ -67,7 +70,7 @@ class Event(Base):
     repeat_type = Column(PgEnum(RepeatType, name='repeat_type_enum', create_type=False), nullable=False,
                          default=RepeatType.ONLY_DAY)
     days_of_week = Column(ARRAY(String))
-    chat_name = Column(String(10), nullable=True, default=None)
+    chat_type = Column(String(10), nullable=True, default=None)
     telegram_chat_id = Column(BigInteger, nullable=False)
     group_id = Column(Integer, ForeignKey('groups.id'), nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)

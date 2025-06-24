@@ -2,12 +2,13 @@ from aiogram import Router, types
 from aiogram.filters import Command, StateFilter
 from aiogram.types import Message
 from sqlalchemy.orm import sessionmaker
+from const.event.priority import Priority
 from aiogram import F
 
 from keyboards import keyboards
 
 from config import BotConfig
-from db import engine, Event
+from db import engine, Event, User, Group
 
 config = BotConfig()
 router = Router()
@@ -16,23 +17,39 @@ Session = sessionmaker(bind=engine)
 
 @router.message(StateFilter(None), Command("list"))
 async def event_list_handler(message: Message):
-    await message.answer(text="Выбор ...",reply_markup=keyboards.events_list_inline_kb())
+    await message.answer(text="Выбор ...", reply_markup=keyboards.events_list_inline_kb())
 
 
 @router.callback_query(F.data == 'all')
 async def todo_status_events_list(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(reply_markup=None)
+
     with Session() as session:
-        event_list = session.query(Event).filter_by(telegram_chat_id=callback.from_user.id).all()
-        for event in event_list:
+        chat = callback.message.chat
+        chat_id = chat.id
+
+        groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
+
+        if chat.type == "private":
+            events = session.query(Event).filter_by(telegram_chat_id=chat_id).all()
+        else:
+            if not groups:
+                await callback.message.answer("Группа не зарегистрирована.")
+                return
+
+            events = []
+            for group in groups:
+                group_events = session.query(Event).filter_by(group_id=group.id).all()
+                events.extend(group_events)
+
+        if not events:
+            await callback.message.answer("Нет событий.")
+            return
+
+        for event in events:
             await callback.message.answer(
-                text=(
-                    f"🆔<i>\t{event.id}</i>\n"
-                    f"🔔<i>\t{event.title}</i>\n"
-                    f"📝<i>\t{event.description or '—'}</i>\n"
-                    f"❓<i>\t{event.status.value}</i>\n"
-                    f"✔️<i>\t{event.priority.value}</i>\n"
-                )
+                text=str(event),
+                parse_mode="HTML"
             )
 
 
@@ -41,31 +58,40 @@ async def priority_list_handler(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(text="По какому критерию", reply_markup=keyboards.priority_inline_kb())
 
-from const.event.priority import Priority
 
 @router.callback_query(lambda c: c.data in [p.value for p in Priority])
 async def priority_list_status_handler(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(reply_markup=None)
+
     with Session() as session:
         priority_value = Priority(callback.data)
+        chat_id = callback.message.chat.id
 
-        event_list = session.query(Event).filter(
-            Event.telegram_chat_id == callback.from_user.id,
-            Event.priority == priority_value
-        ).all()
+        if callback.message.chat.type == "private":
+            user = session.query(User).filter_by(telegram_user_id=callback.from_user.id).first()
+            if not user:
+                await callback.message.answer("Пользователь не найден.")
+                return
 
-    if not event_list:
-        await callback.message.answer("Нет событий с таким приоритетом.")
-        return
+            events = session.query(Event).filter(
+                Event.user_id == user.id,
+                Event.priority == priority_value,
+                Event.group_id.is_(None)
+            ).all()
+        else:
+            group = session.query(Group).filter_by().first()
+            if not group:
+                await callback.message.answer("Группа не зарегистрирована.")
+                return
 
-    for event in event_list:
-        await callback.message.answer(
-            text=(
-                f"🆔<i>\t{event.id}</i>\n"
-                f"🔔<i>\t{event.title}</i>\n"
-                f"📝<i>\t{event.description or '—'}</i>\n"
-                f"❓\t{event.status.value}\n"
-                f"✔️\t{event.priority.value}\n"
-            ),
-            parse_mode="HTML"
-        )
+            events = session.query(Event).filter(
+                Event.group_id == group.id,
+                Event.priority == priority_value
+            ).all()
+
+        if not events:
+            await callback.message.answer("Нет событий с таким приоритетом.")
+            return
+
+        for event in events:
+            await callback.message.answer(text=str(event), parse_mode="HTML")
