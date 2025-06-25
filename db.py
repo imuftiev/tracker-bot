@@ -70,6 +70,7 @@ class Event(Base):
     repeat_type = Column(PgEnum(RepeatType, name='repeat_type_enum', create_type=False), nullable=False,
                          default=RepeatType.ONLY_DAY)
     days_of_week = Column(ARRAY(String))
+    days_of_month = Column(ARRAY(Integer))
     chat_type = Column(String(10), nullable=True, default=None)
     telegram_chat_id = Column(BigInteger, nullable=False)
     group_id = Column(Integer, ForeignKey('groups.id'), nullable=True)

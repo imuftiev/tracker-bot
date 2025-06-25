@@ -38,6 +38,12 @@ async def back(callback: CallbackQuery, state: FSMContext):
     await state.set_state(previous_state)
 
     match previous_state:
+        case AddEventState.events_list:
+            if callback.message.chat.type == "private":
+                await callback.message.edit_text(text="Выбор ...", reply_markup=keyboards.private_events_list_inline_kb())
+            else:
+                await callback.message.edit_text(text="Выбор ...", reply_markup=keyboards.group_events_list_inline_kb())
+            return
         case AddEventState.adding_title:
             await callback.message.edit_text(text="Введите название события", reply_markup=keyboards.cancel_button())
             return

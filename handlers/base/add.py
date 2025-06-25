@@ -39,9 +39,11 @@ Session = sessionmaker(bind=engine)
 
 
 async def push_state(state: FSMContext, new_state):
+    logging.info("Calling push_state")
     data = await state.get_data()
     history = data.get("history", [])
     current_state = await state.get_state()
+    logging.info(f"Current state: {current_state}")
     if current_state:
         history.append(current_state)
     await state.update_data(history=history)
@@ -107,8 +109,7 @@ async def event_status(callback: types.CallbackQuery, state: FSMContext):
 
         await push_state(state, AddEventState.adding_repeatable)
         await state.update_data(status=callback.data)
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(
+        await callback.message.edit_text(
             text="Когда напомнить про событие",
             reply_markup=keyboards.repeatable_inline_kb()
         )
@@ -125,25 +126,59 @@ async def event_status(callback: types.CallbackQuery, state: FSMContext):
 )
 async def event_repeatable(callback: types.CallbackQuery, state: FSMContext):
     try:
-        if callback.data == InlineButtonType.CANCEL.value:
-            await cancel_button(callback, state)
-            return
-        if callback.data == InlineButtonType.RETURN.value:
-            await back(callback, state)
-            return
-        if callback.data == RepeatType.ONLY_DAY.value:
-            await state.update_data(repeatable=False)
-        else:
-            await state.update_data(repeatable=True)
+        match callback.data:
+            case InlineButtonType.CANCEL.value:
+                await cancel_button(callback, state)
+                return
+            case InlineButtonType.RETURN.value:
+                await back(callback, state)
+                return
 
-        await state.update_data(repeat_type=RepeatType(callback.data))
+        match callback.data:
+            case RepeatType.ONLY_DAY.value:
+                await state.update_data(repeatable=False)
+                await state.update_data(repeat_type=RepeatType(callback.data))
+                await push_state(state, AddEventState.adding_remind_at)
+                await callback.message.edit_reply_markup(reply_markup=None)
+                await callback.message.edit_text("Напишите время напоминания в формате '12:30' или '1230'",
+                                                 reply_markup=keyboards.cancel_back_button())
+                return
+            case RepeatType.EVERY_DAY.value:
+                await state.update_data(repeatable=True)
+                await state.update_data(repeat_type=RepeatType(callback.data))
+                await push_state(state, RepeatableEventState.adding_day)
 
-        await push_state(state, AddEventState.adding_remind_at)
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer("Напишите время напоминания в формате '12:30' или '1230'",
-                                      reply_markup=keyboards.cancel_back_button())
+                await callback.message.edit_reply_markup(reply_markup=None)
+                await callback.message.edit_text(
+                    text="Выберите дни для повторения:",
+                    reply_markup=keyboards.days_of_week_inline_kb(selected_days=[])
+                )
+                return
+
+
     except Exception as e:
         logging.error(f"Ошибка в event_repeatable: {e}")
+
+
+@router.callback_query(
+    F.data.in_([d.value for d in RepeatDays]),
+    RepeatableEventState.adding_day
+)
+async def select_repeat_day(callback: CallbackQuery, state: FSMContext):
+    day = callback.data
+    data = await state.get_data()
+    selected_days = data.get("selected_days", [])
+
+    if day in selected_days:
+        selected_days.remove(day)
+    else:
+        selected_days.append(day)
+
+    await state.update_data(selected_days=selected_days)
+
+    new_markup = keyboards.days_of_week_inline_kb(selected_days=selected_days)
+
+    await callback.message.edit_text(text="Выберите дни для повторения:", reply_markup=new_markup)
 
 
 """ Обработчик сообщения – Время напоминания 'HH:MM' """
@@ -179,8 +214,8 @@ async def event_priority(callback: types.CallbackQuery, state: FSMContext):
             await state.update_data(
                 user_id=session.query(User).filter_by(telegram_user_id=callback.from_user.id).first().id)
 
-            await callback.message.answer(text="Куда напомнить о событии?",
-                                          reply_markup=keyboards.chat_type_inline_kb())
+            await callback.message.edit_text(text="Куда напомнить о событии?",
+                                             reply_markup=keyboards.chat_type_inline_kb())
             await push_state(state, AddEventState.adding_private)
         except Exception as e:
             logging.error(e)
@@ -189,8 +224,7 @@ async def event_priority(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == Chat.GROUP.value)
 async def event_group_id(callback: types.CallbackQuery, state: FSMContext):
     try:
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(text="Введите ID группы")
+        await callback.message.edit_text(text="Введите ID группы", reply_markup=None)
         await push_state(state, AddEventState.adding_group)
     except Exception as e:
         logging.error(e)
@@ -257,19 +291,10 @@ async def event_private(callback: types.CallbackQuery, state: FSMContext):
             session.add(new_event)
             session.commit()
             await state.clear()
-            await callback.message.edit_reply_markup(reply_markup=None)
-            await callback.message.answer(text=config.success_text)
+            await callback.message.edit_text(text=config.success_text, reply_markup=None)
 
         except Exception as e:
             logging.error(e)
-
-
-@router.callback_query(F.data, RepeatableEventState.adding_day)
-async def every_day_event(state: FSMContext):
-    try:
-        await state.set_state(AddEventState.adding_remind_at)
-    except Exception as e:
-        logging.error(e)
 
 
 @router.callback_query(F.data == RepeatDays.ALL_DAYS.value)
