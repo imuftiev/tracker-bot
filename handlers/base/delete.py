@@ -1,11 +1,11 @@
 import logging
-
+import re
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.orm import sessionmaker
 
-from const.event.delete import DeleteEvent
+from const.callback.delete import DeleteEvent
 from db import Event, engine
 from handlers.filter.filter import IsPrivate
 from keyboards.keyboards import delete_type_inline_kb
@@ -37,3 +37,29 @@ async def delete_all_events(callback: CallbackQuery):
         await callback.message.answer(text=config.delete_all_text)
     except Exception as error:
         logging.error(error)
+
+
+@router.callback_query(F.data.startswith("delete_event:"))
+async def delete_event_handler(callback: CallbackQuery):
+    try:
+        match = re.match(r"delete_event:(\d+)", callback.data)
+        if not match:
+            await callback.message.answer("Неверный формат команды удаления.")
+            return
+
+        event_id = int(match.group(1))
+
+        with Session() as session:
+            event = session.query(Event).filter_by(id=event_id).first()
+            if not event:
+                await callback.message.answer("Событие не найдено или уже удалено.")
+                return
+
+            session.delete(event)
+            session.commit()
+
+        await callback.message.edit_text("🗑️ Событие успешно удалено.", reply_markup=None)
+
+    except Exception as e:
+        logging.error(e)
+        await callback.message.answer("Ошибка при удалении события.")

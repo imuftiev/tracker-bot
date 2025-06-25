@@ -1,10 +1,17 @@
+import logging
+
 from aiogram import Router, types
 from aiogram.filters import Command, StateFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.orm import sessionmaker
+
+from bot_state.states import AddEventState
+from const.event.chat import Chat
 from const.event.priority import Priority
 from aiogram import F
 
+from handlers.base.add import push_state
 from keyboards import keyboards
 
 from config import BotConfig
@@ -16,81 +23,126 @@ Session = sessionmaker(bind=engine)
 
 
 @router.message(StateFilter(None), Command("list"))
-async def event_list_handler(message: Message):
-    await message.answer(text="Выбор ...", reply_markup=keyboards.events_list_inline_kb())
+async def event_list_handler(message: Message, state: FSMContext):
+    if message.chat.type == "private":
+        await message.answer(text="Выбор ...", reply_markup=keyboards.private_events_list_inline_kb())
+        await push_state(state, AddEventState.events_list)
+    else:
+        await message.answer(text="Выбор ...", reply_markup=keyboards.group_events_list_inline_kb())
+        await push_state(state, AddEventState.events_list)
 
 
 @router.callback_query(F.data == 'all')
-async def todo_status_events_list(callback: types.CallbackQuery):
+async def todo_status_events_list(callback: types.CallbackQuery, state : FSMContext):
     await callback.message.edit_reply_markup(reply_markup=None)
     print(callback.message.chat.id)
 
-    with Session() as session:
-        chat = callback.message.chat
-        chat_id = chat.id
+    try:
+        with Session() as session:
+            chat = callback.message.chat
+            chat_id = chat.id
 
-        groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
+            groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
 
-        if chat.type == "private":
-            events = session.query(Event).filter_by(telegram_chat_id=chat_id).all()
-        else:
-            if not groups:
-                await callback.message.answer("В группе нет событий.")
-                return
+            if chat.type == "private":
+                events = session.query(Event).filter_by(telegram_chat_id=chat_id).all()
 
-            events = []
-            for group in groups:
-                group_events = session.query(Event).filter_by(group_id=group.id).all()
-                events.extend(group_events)
+                for event in events:
+                    await callback.message.answer(text=str(event), parse_mode="HTML",
+                                                  reply_markup=keyboards.get_event_delete_keyboard(event.id))
 
-        if not events:
-            await callback.message.answer("Нет событий.")
-            return
+                if not events:
+                    await callback.message.edit_text("Нет событий.")
+                    await state.clear()
+                    return
+            else:
+                if not groups:
+                    await callback.message.edit_text("Группа отсутствует.")
+                    await state.clear()
+                    return
 
-        for event in events:
-            await callback.message.answer(
-                text=str(event),
-                parse_mode="HTML"
-            )
+                events = []
+                for group in groups:
+                    group_events = session.query(Event).filter_by(group_id=group.id).all()
+                    events.extend(group_events)
+
+                if not events:
+                    await callback.message.edit_text("Нет событий.")
+                    await state.clear()
+                    return
+
+                for event in events:
+                    await callback.message.answer(text=str(event), parse_mode="HTML")
+            await state.clear()
+
+    except Exception as e:
+        logging.error(e)
 
 
-@router.callback_query(F.data == 'priority')
-async def priority_list_handler(callback: types.CallbackQuery):
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await callback.message.answer(text="По какому критерию", reply_markup=keyboards.priority_inline_kb())
+@router.callback_query(F.data.in_(['group', 'private']))
+async def group_events_list(callback: types.CallbackQuery, state : FSMContext):
+    try:
+        await callback.message.edit_reply_markup(reply_markup=None)
+        with Session() as session:
+            match callback.data:
+                case "group":
+                    events = session.query(Event).filter_by(chat_type=Chat.GROUP.value).all()
+                    if not events:
+                        await callback.message.edit_text(text="Нет событий.")
+                    for event in events:
+                        await callback.message.answer(text=str(event), reply_markup=keyboards.get_event_delete_keyboard(event.id))
+                    await state.clear()
+                    return
+                case "private":
+                    events = session.query(Event).filter_by(chat_type=Chat.PRIVATE.value).all()
+                    if not events:
+                        await callback.message.edit_text(text="Нет событий.")
+                    for event in events:
+                        await callback.message.answer(text=str(event), reply_markup=keyboards.get_event_delete_keyboard(event.id))
+                    await state.clear()
+                    return
+    except Exception as e:
+        logging.error(e)
+
+
+@router.callback_query(F.data == 'priority', AddEventState.events_list)
+async def priority_list_handler(callback: types.CallbackQuery, state: FSMContext):
+    await push_state(state, AddEventState.events_priority)
+    await callback.message.edit_text(text="По какому критерию", reply_markup=keyboards.priority_inline_kb())
 
 
 @router.callback_query(lambda c: c.data in [p.value for p in Priority])
-async def priority_list_status_handler(callback: types.CallbackQuery):
+async def priority_list_status_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup(reply_markup=None)
+    try:
+        with (Session() as session):
+            priority_value = Priority(callback.data)
+            chat_id = callback.message.chat.id
 
-    with (Session() as session):
-        priority_value = Priority(callback.data)
-        chat_id = callback.message.chat.id
-
-        if callback.message.chat.type == "private":
-            events = session.query(Event).filter(
-                Event.telegram_chat_id == chat_id,
-                Event.priority == priority_value
-            ).all()
-
-        else:
-            groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
-            if not groups:
-                await callback.message.answer("В группе нет событий.")
-                return
-
-            events = []
-            for group in groups:
-                group_events = session.query(Event).filter(
-                    Event.group_id == group.id,
+            if callback.message.chat.type == "private":
+                events = session.query(Event).filter(
+                    Event.telegram_chat_id == chat_id,
                     Event.priority == priority_value
                 ).all()
-                events.extend(group_events)
 
-        if not events:
-            await callback.message.answer("Нет событий с таким приоритетом.")
-            return
+            else:
+                groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
+                if not groups:
+                    await callback.message.edit_text("В группе нет событий.")
 
-        for event in events:
-            await callback.message.answer(text=str(event), parse_mode="HTML")
+                events = []
+                for group in groups:
+                    group_events = session.query(Event).filter(
+                        Event.group_id == group.id,
+                        Event.priority == priority_value
+                    ).all()
+                    events.extend(group_events)
+
+            if not events:
+                await callback.message.edit_text("Нет событий с таким приоритетом.")
+
+            for event in events:
+                await callback.message.answer(text=str(event), parse_mode="HTML")
+            await state.clear()
+    except Exception as e:
+        logging.error(e)

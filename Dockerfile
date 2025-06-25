@@ -1,4 +1,2 @@
-FROM python:
-LABEL authors="iwast"
-
-ENTRYPOINT ["top", "-b"]
+FROM python:3.13
+WORKDIR
