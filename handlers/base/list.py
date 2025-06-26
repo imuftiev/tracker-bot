@@ -22,18 +22,19 @@ router = Router()
 Session = sessionmaker(bind=engine)
 
 
-@router.message(StateFilter(None), Command("list"))
-async def event_list_handler(message: Message, state: FSMContext):
+@router.message(Command("list"))
+async def list_command(message: Message, state: FSMContext):
+    await state.clear()
     if message.chat.type == "private":
-        await message.answer(text="Выбор ...", reply_markup=keyboards.private_events_list_inline_kb())
+        await message.answer(text="Выбор ...", reply_markup=keyboards.get_private_events_filter_keyboard())
         await push_state(state, AddEventState.events_list)
     else:
-        await message.answer(text="Выбор ...", reply_markup=keyboards.group_events_list_inline_kb())
+        await message.answer(text="Выбор ...", reply_markup=keyboards.get_group_events_filter_keyboard())
         await push_state(state, AddEventState.events_list)
 
 
 @router.callback_query(F.data == 'all')
-async def todo_status_events_list(callback: types.CallbackQuery, state : FSMContext):
+async def get_all_events(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup(reply_markup=None)
     print(callback.message.chat.id)
 
@@ -42,6 +43,7 @@ async def todo_status_events_list(callback: types.CallbackQuery, state : FSMCont
             chat = callback.message.chat
             chat_id = chat.id
 
+
             groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
 
             if chat.type == "private":
@@ -49,7 +51,7 @@ async def todo_status_events_list(callback: types.CallbackQuery, state : FSMCont
 
                 for event in events:
                     await callback.message.answer(text=str(event), parse_mode="HTML",
-                                                  reply_markup=keyboards.get_event_delete_keyboard(event.id))
+                                                  reply_markup=keyboards.get_event_action_keyboard(event.id))
 
                 if not events:
                     await callback.message.edit_text("Нет событий.")
@@ -80,25 +82,27 @@ async def todo_status_events_list(callback: types.CallbackQuery, state : FSMCont
 
 
 @router.callback_query(F.data.in_(['group', 'private']))
-async def group_events_list(callback: types.CallbackQuery, state : FSMContext):
+async def group_events_list(callback: types.CallbackQuery, state: FSMContext):
     try:
         await callback.message.edit_reply_markup(reply_markup=None)
         with Session() as session:
+            events = session.query(Event).filter_by(chat_type=Chat.GROUP.value).all()
             match callback.data:
                 case "group":
-                    events = session.query(Event).filter_by(chat_type=Chat.GROUP.value).all()
+
                     if not events:
                         await callback.message.edit_text(text="Нет событий.")
                     for event in events:
-                        await callback.message.answer(text=str(event), reply_markup=keyboards.get_event_delete_keyboard(event.id))
+                        await callback.message.answer(text=str(event),
+                                                      reply_markup=keyboards.get_event_action_keyboard(event.id))
                     await state.clear()
                     return
                 case "private":
-                    events = session.query(Event).filter_by(chat_type=Chat.PRIVATE.value).all()
                     if not events:
                         await callback.message.edit_text(text="Нет событий.")
                     for event in events:
-                        await callback.message.answer(text=str(event), reply_markup=keyboards.get_event_delete_keyboard(event.id))
+                        await callback.message.answer(text=str(event),
+                                                      reply_markup=keyboards.get_event_action_keyboard(event.id))
                     await state.clear()
                     return
     except Exception as e:
@@ -108,7 +112,7 @@ async def group_events_list(callback: types.CallbackQuery, state : FSMContext):
 @router.callback_query(F.data == 'priority', AddEventState.events_list)
 async def priority_list_handler(callback: types.CallbackQuery, state: FSMContext):
     await push_state(state, AddEventState.events_priority)
-    await callback.message.edit_text(text="По какому критерию", reply_markup=keyboards.priority_inline_kb())
+    await callback.message.edit_text(text="По какому критерию", reply_markup=keyboards.get_priority_keyboard())
 
 
 @router.callback_query(lambda c: c.data in [p.value for p in Priority])

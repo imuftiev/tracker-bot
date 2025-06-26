@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from const.callback.delete import DeleteEvent
 from db import Event, engine
 from handlers.filter.filter import IsPrivate
-from keyboards.keyboards import delete_type_inline_kb
+from keyboards.keyboards import get_delete_type_keyboard
 from aiogram import F
 from config import BotConfig
 
@@ -16,12 +16,17 @@ config = BotConfig()
 router = Router()
 Session = sessionmaker(bind=engine)
 
-
+"""
+    Обработчик команды /delete
+"""
 @router.message(Command("delete"), IsPrivate())
-async def delete_events(message: Message):
-    await message.answer(text="Как удалить ивенты", reply_markup=delete_type_inline_kb())
+async def delete_command(message: Message):
+    await message.answer(text="Удалить все ивенты. Для удаления отдельных введите команду /list -> 'Все'", reply_markup=get_delete_type_keyboard())
 
 
+"""
+    Обработчик callback-кнопки удалить 'Все' ивенты
+"""
 @router.callback_query(F.data == DeleteEvent.DELETE_ALL.value)
 async def delete_all_events(callback: CallbackQuery):
     chat_id = callback.message.chat.id
@@ -39,8 +44,11 @@ async def delete_all_events(callback: CallbackQuery):
         logging.error(error)
 
 
+"""
+    Обработчик callback-кнопки 'delete' у каждого отдельного ивента в списке
+"""
 @router.callback_query(F.data.startswith("delete_event:"))
-async def delete_event_handler(callback: CallbackQuery):
+async def delete_event_by_id(callback: CallbackQuery):
     try:
         match = re.match(r"delete_event:(\d+)", callback.data)
         if not match:
