@@ -1,4 +1,3 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
 
@@ -15,7 +14,10 @@ from const.event.repeatable import RepeatDays
 config = config.BotConfig()
 
 
-def days_of_week_inline_kb(selected_days: list[str] = None) -> InlineKeyboardMarkup:
+"""
+    Отметка выбранных дней для повторений при создании нового ивента.
+"""
+def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboardMarkup:
     selected_days = selected_days or []
     buttons = []
 
@@ -35,61 +37,85 @@ def days_of_week_inline_kb(selected_days: list[str] = None) -> InlineKeyboardMar
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def cancel_button() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению для отмены действия.
+    Работает только в личном чате.
+"""
+def get_cancel_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value))
     return builder.as_markup(resize_keyboard=True)
 
 
-def cancel_back_button() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению для отмены и возврата предыдущего действия.
+    Работает только в личном чате.
+"""
+def get_cancel_return_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value))
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value))
     return builder.as_markup(resize_keyboard=True)
 
 
-def repeatable_inline_kb() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению при создании нового ивента при выборе периодичности событий.
+    Работает только в личном чате.
+"""
+def get_repeatable_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inline_keyboard = [
-        types.InlineKeyboardButton(text="Каждый день", callback_data=RepeatType.EVERY_DAY.value),
-        types.InlineKeyboardButton(text="Каждую неделю", callback_data=RepeatType.EVERY_WEEK.value),
-        types.InlineKeyboardButton(text="Каждый месяц", callback_data=RepeatType.EVERY_MONTH.value),
-        types.InlineKeyboardButton(text="Каждый год", callback_data=RepeatType.EVERY_YEAR.value),
-        types.InlineKeyboardButton(text="Только сегодня", callback_data=RepeatType.ONLY_DAY.value),
+        types.InlineKeyboardButton(text=RepeatType.EVERY_DAY.value, callback_data=RepeatType.EVERY_DAY.value),
+        types.InlineKeyboardButton(text=RepeatType.EVERY_WEEK.value, callback_data=RepeatType.EVERY_WEEK.value),
+        types.InlineKeyboardButton(text=RepeatType.EVERY_MONTH.value, callback_data=RepeatType.EVERY_MONTH.value),
+        types.InlineKeyboardButton(text=RepeatType.EVERY_YEAR.value, callback_data=RepeatType.EVERY_YEAR.value),
+        types.InlineKeyboardButton(text=RepeatType.ONLY_DAY.value, callback_data=RepeatType.ONLY_DAY.value),
         types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
         types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value)]
-    for InlineKeyboardButton in inline_keyboard:
-        builder.row(InlineKeyboardButton)
+    for button in inline_keyboard:
+        builder.row(button)
     return builder.as_markup(resize_keyboard=True)
 
 
-def priority_inline_kb() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению при создании нового ивента при выборе приоритета событий.
+    Работает только в личном чате.
+"""
+def get_priority_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inline_keyboard = [
-        types.InlineKeyboardButton(text="Низкий", callback_data=Priority.LOW.value),
-        types.InlineKeyboardButton(text="Средний", callback_data=Priority.MEDIUM.value),
-        types.InlineKeyboardButton(text="Высокий", callback_data=Priority.HIGH.value),
-        types.InlineKeyboardButton(text="Критический", callback_data=Priority.CRITICAL.value),
+        types.InlineKeyboardButton(text=Priority.LOW.value, callback_data=Priority.LOW.value),
+        types.InlineKeyboardButton(text=Priority.MEDIUM.value, callback_data=Priority.MEDIUM.value),
+        types.InlineKeyboardButton(text=Priority.HIGH.value, callback_data=Priority.HIGH.value),
+        types.InlineKeyboardButton(text=Priority.CRITICAL.value, callback_data=Priority.CRITICAL.value),
     ]
-    for InlineKeyboardButton in inline_keyboard:
-        builder.row(InlineKeyboardButton)
+    for button in inline_keyboard:
+        builder.row(button)
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value))
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value))
     return builder.as_markup(resize_keyboard=True)
 
 
-def status_inline_kb() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению при создании нового ивента при выборе статуса событий.
+    Работает только в личном чате.
+"""
+def get_status_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.add(types.InlineKeyboardButton(text="Выполнить", callback_data=Status.TO_DO.value))
-    builder.add(types.InlineKeyboardButton(text="В процессе", callback_data=Status.PROCESSING.value))
-    builder.add(types.InlineKeyboardButton(text="Выполнено", callback_data=Status.DONE.value))
+    builder.add(types.InlineKeyboardButton(text=Status.TO_DO.value, callback_data=Status.TO_DO.value))
+    builder.add(types.InlineKeyboardButton(text=Status.PROCESSING.value, callback_data=Status.PROCESSING.value))
+    builder.add(types.InlineKeyboardButton(text=Status.DONE.value, callback_data=Status.DONE.value))
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
                 types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
                 width=8)
     return builder.as_markup(resize_keyboard=True)
 
 
-def private_events_list_inline_kb() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению при выборе фильтра всех доступных событий.
+    Работает только в личном чате.
+"""
+def get_private_events_filter_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(text="По статусу", callback_data='status'))
     builder.add(types.InlineKeyboardButton(text="По приоритету", callback_data='priority'))
@@ -101,7 +127,11 @@ def private_events_list_inline_kb() -> InlineKeyboardMarkup:
     return builder.as_markup(resize_keyboard=True)
 
 
-def group_events_list_inline_kb() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению при выборе фильтра всех доступных событий.
+    Работает только в группе.
+"""
+def get_group_events_filter_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(text="По статусу", callback_data='status'))
     builder.add(types.InlineKeyboardButton(text="По приоритету", callback_data='priority'))
@@ -111,7 +141,16 @@ def group_events_list_inline_kb() -> InlineKeyboardMarkup:
     return builder.as_markup(resize_keyboard=True)
 
 
-def chat_type_inline_kb() -> InlineKeyboardMarkup:
+def get_only_day_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row()
+
+
+"""
+    Прикрепляется к сообщению при выборе куда отправить уведомление, в личный чат или в группу.
+    Работает только в личном чате.
+"""
+def get_chat_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         types.InlineKeyboardButton(text="В этот чат", callback_data=Chat.PRIVATE.value)
@@ -125,20 +164,25 @@ def chat_type_inline_kb() -> InlineKeyboardMarkup:
     return builder.as_markup(resize_keyboard=True)
 
 
-def delete_type_inline_kb() -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению события при вводе команда /delete.
+    Работает только в личном чате.
+"""
+def get_delete_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         types.InlineKeyboardButton(text="Все", callback_data=DeleteEvent.DELETE_ALL.value),
-    )
-    builder.row(
-        types.InlineKeyboardButton(text="Отдельные", callback_data=DeleteEvent.DELETE.value)
     )
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
                 width=8)
     return builder.as_markup(resize_keyboard=True)
 
 
-def get_event_delete_keyboard(event_id: int) -> InlineKeyboardMarkup:
+"""
+    Прикрепляется к сообщению события при выводе всех существующих событий.
+    Работает только при выводе всех событий в личном чате.
+"""
+def get_event_action_keyboard(event_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [

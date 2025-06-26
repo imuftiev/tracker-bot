@@ -16,7 +16,7 @@ class AddEventState(StatesGroup):
     events_list = State()
     events_priority = State()
 
-    adding_private = State()
+    adding_privacy = State()
     adding_group = State()
     telegram_chat_id = State()
     user_id = State()

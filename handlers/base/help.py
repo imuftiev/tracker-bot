@@ -14,9 +14,11 @@ config = BotConfig()
 router = Router()
 Session = sessionmaker(bind=engine)
 
-
+"""
+    Обработчик команды /help
+"""
 @router.message(Command("help"))
-async def cmd_help(message: Message) -> None:
+async def help_command(message: Message) -> None:
     try:
         await message.answer(text=config.assembled_text, parse_mode=ParseMode.HTML)
     except Exception as e:

@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from sqlalchemy.orm import Session
 
-from bot_state.states import AddEventState
+from bot_state.states import AddEventState, RepeatableEventState
 from config import BotConfig
 from const.callback.callback_types import InlineButtonType
 from keyboards import keyboards
@@ -40,29 +40,36 @@ async def back(callback: CallbackQuery, state: FSMContext):
     match previous_state:
         case AddEventState.events_list:
             if callback.message.chat.type == "private":
-                await callback.message.edit_text(text="Выбор ...", reply_markup=keyboards.private_events_list_inline_kb())
+                await callback.message.edit_text(text="Выбор ...", reply_markup=keyboards.get_private_events_filter_keyboard())
             else:
-                await callback.message.edit_text(text="Выбор ...", reply_markup=keyboards.group_events_list_inline_kb())
+                await callback.message.edit_text(text="Выбор ...", reply_markup=keyboards.get_group_events_filter_keyboard())
             return
         case AddEventState.adding_title:
-            await callback.message.edit_text(text="Введите название события", reply_markup=keyboards.cancel_button())
+            await callback.message.edit_text(text="Введите название события", reply_markup=keyboards.get_cancel_keyboard())
             return
         case AddEventState.adding_description:
-            await callback.message.edit_text("Введите описание события", reply_markup=keyboards.cancel_back_button())
+            await callback.message.edit_text("Введите описание события", reply_markup=keyboards.get_cancel_return_keyboard())
             return
         case AddEventState.adding_status:
-            await callback.message.edit_text("Выберите статус события", reply_markup=keyboards.status_inline_kb())
+            await callback.message.edit_text("Выберите статус события", reply_markup=keyboards.get_status_keyboard())
             return
         case AddEventState.adding_repeatable:
             await callback.message.edit_text(
-                "Когда напомнить про событие", reply_markup=keyboards.repeatable_inline_kb())
+                "Когда напомнить про событие", reply_markup=keyboards.get_repeatable_type_keyboard())
+            return
+        case RepeatableEventState.adding_day:
+            data = await state.get_data()
+            selected_days = data.get("selected_days", [])
+            await callback.message.edit_text(
+                text="Выберите дни для повторения:", reply_markup=keyboards.get_days_of_week_keyboard(selected_days=selected_days)
+            )
             return
         case AddEventState.adding_remind_at:
             await callback.message.edit_text("Напишите время напоминания в формате '12:30' или '1230'",
-                                             reply_markup=keyboards.cancel_back_button())
+                                             reply_markup=keyboards.get_cancel_return_keyboard())
             return
         case AddEventState.adding_priority:
             await callback.message.edit_text(
-                "Приоритет события", reply_markup=keyboards.priority_inline_kb())
+                "Приоритет события", reply_markup=keyboards.get_priority_keyboard())
             return
     await callback.answer()

@@ -6,7 +6,7 @@ class RepeatType(Enum):
     EVERY_WEEK = 'Еженедельно'
     EVERY_MONTH = 'Ежемесячно'
     EVERY_YEAR = 'Ежегодно'
-    ONLY_DAY = 'Только сегодня'
+    ONLY_DAY = 'Определенный день'
 
 
 class RepeatDays(Enum):

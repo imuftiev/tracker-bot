@@ -13,9 +13,11 @@ config = BotConfig()
 router = Router()
 Session = sessionmaker(bind=engine)
 
-
+"""
+    Обработчик команды /start
+"""
 @router.message(Command("start"))
-async def cmd_start(message: Message):
+async def start_command(message: Message):
     with Session() as session:
         try:
             if (session.query(User).filter_by(telegram_user_id=message.from_user.id).first()

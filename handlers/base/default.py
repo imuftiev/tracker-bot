@@ -3,7 +3,6 @@ from aiogram import F
 from aiogram.types import Message
 
 from config import BotConfig
-from handlers.filter.filter import IsPrivate
 
 router = Router()
 config = BotConfig()
