@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from sqlalchemy.orm import Session
 
-from bot_state.states import AddEventState, RepeatableEventState
+from bot_state.states import AddEventState, RepeatableEventState, UpdateEventState, EventsListFilter
 from config import BotConfig
 from const.callback.callback_types import InlineButtonType
 from keyboards import keyboards
@@ -38,7 +38,7 @@ async def back(callback: CallbackQuery, state: FSMContext):
     await state.set_state(previous_state)
 
     match previous_state:
-        case AddEventState.events_list:
+        case EventsListFilter.events_list:
             if callback.message.chat.type == "private":
                 await callback.message.edit_text(text="Выбор ...", reply_markup=keyboards.get_private_events_filter_keyboard())
             else:
@@ -53,6 +53,11 @@ async def back(callback: CallbackQuery, state: FSMContext):
         case AddEventState.adding_status:
             await callback.message.edit_text("Выберите статус события", reply_markup=keyboards.get_status_keyboard())
             return
+        case AddEventState.adding_remind_date:
+            await callback.message.edit_text("Запишите дату и время, когда нужно напомнить в формате"
+                                                 "\n«Месяц.День.Год Часы:Минуты»\nПример: «14.08.2025 09:00»",
+                                                 reply_markup=keyboards.get_day_options_keyboard())
+            return
         case AddEventState.adding_repeatable:
             await callback.message.edit_text(
                 "Когда напомнить про событие", reply_markup=keyboards.get_repeatable_type_keyboard())
@@ -65,11 +70,18 @@ async def back(callback: CallbackQuery, state: FSMContext):
             )
             return
         case AddEventState.adding_remind_at:
-            await callback.message.edit_text("Напишите время напоминания в формате '12:30' или '1230'",
-                                             reply_markup=keyboards.get_cancel_return_keyboard())
+            await callback.message.edit_text("Напишите время напоминания в формате\n«12:30, 09:00» или «1230, 0900»",
+                                         reply_markup=keyboards.get_cancel_return_keyboard())
             return
         case AddEventState.adding_priority:
             await callback.message.edit_text(
                 "Приоритет события", reply_markup=keyboards.get_priority_keyboard())
+            return
+        case UpdateEventState.updating:
+            event_id = data.get("event_id")
+            await callback.message.edit_text(
+                text="Что изменить в событии",
+                reply_markup=keyboards.update_event_keyboard(event_id)
+            )
             return
     await callback.answer()

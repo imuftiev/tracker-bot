@@ -9,7 +9,6 @@ from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.future import select
 from aiogram import Bot
 
 from const.event.repeatable import RepeatType
@@ -110,6 +109,7 @@ def schedule_one_time_event(event: Event):
 
 
 def schedule_repeatable_event(event: Event):
+    # if event.repeat_type == RepeatType.EVERY_MONTH:
     if event.repeat_type == RepeatType.EVERY_DAY and event.days_of_week:
         for weekday in event.days_of_week:
             cron_day = DAY_OF_WEEK_MAP.get(weekday)

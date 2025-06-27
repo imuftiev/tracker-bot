@@ -9,7 +9,7 @@ from aiogram.enums import ParseMode
 from dotenv import load_dotenv
 
 from config import BotConfig
-from handlers.base import start, help, list, add, default, delete, group_chat, private_chat
+from handlers.base import start, help, list, add, default, update, delete, group_chat, private_chat
 from handlers.keyboard import inline
 from scheduler.apscheduler import load_all_events, scheduler
 
@@ -23,7 +23,7 @@ botconfig = BotConfig()
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp.include_routers(start.router, help.router, add.router, inline.router, private_chat.router, group_chat.router,
-                       list.router, default.router, delete.router)
+                       list.router, update.router, default.router, delete.router)
     scheduler.start()
     await load_all_events()
     print("[Scheduler] Текущие задачи:")
