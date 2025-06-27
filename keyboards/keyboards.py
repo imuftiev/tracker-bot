@@ -31,8 +31,8 @@ def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboard
         )])
 
     buttons.append([
-        InlineKeyboardButton(text="✅ Подтвердить", callback_data=InlineButtonType.CONFIRM.value),
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=InlineButtonType.RETURN.value),
+        InlineKeyboardButton(text=config.confirm, callback_data=InlineButtonType.CONFIRM.value),
+        InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -66,9 +66,11 @@ def get_days_of_month_keyboard(selected_month_days: list[str] = None) -> InlineK
         buttons.append(row)
 
     buttons.append([
-        InlineKeyboardButton(text="✅ Подтвердить", callback_data=InlineButtonType.CONFIRM.value),
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=InlineButtonType.RETURN.value),
+        InlineKeyboardButton(text=config.confirm, callback_data=InlineButtonType.CONFIRM.value),
+        InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
+        InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
     ])
+
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 

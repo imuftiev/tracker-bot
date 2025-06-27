@@ -113,8 +113,10 @@ async def set_new_event_repeatable(callback: types.CallbackQuery, state: FSMCont
                 await state.update_data(repeat_type=RepeatType(callback.data))
                 await push_state(state, AddEventState.adding_remind_date)
                 await callback.message.edit_reply_markup(reply_markup=None)
-                await callback.message.edit_text("Запишите дату и время, когда нужно напомнить в формате"
-                                                 "\n«Месяц.День.Год Часы:Минуты»\nПример: «14.08.2025 09:00»",
+                await callback.message.edit_text("🕓 <b>Запишите дату и время, когда нужно напомнить</b>\n\n"
+                                                 "📅 <i>Формат:</i>\n<code>День.Месяц.Год Часы:Минуты</code>\n"
+                                                 "🔹 <b>Пример:</b> <code>14.08.2025 09:00</code>"
+                                                 ,
                                                  reply_markup=keyboards.get_day_options_keyboard())
                 return
             case RepeatType.EVERY_DAY.value:
@@ -124,7 +126,7 @@ async def set_new_event_repeatable(callback: types.CallbackQuery, state: FSMCont
 
                 await callback.message.edit_reply_markup(reply_markup=None)
                 await callback.message.edit_text(
-                    text="Выберите дни для повторения:",
+                    text="<b>📆 Выберите дни для повторения:</b>",
                     reply_markup=keyboards.get_days_of_week_keyboard(selected_days=[])
                 )
                 return
@@ -135,7 +137,7 @@ async def set_new_event_repeatable(callback: types.CallbackQuery, state: FSMCont
 
                 await callback.message.edit_reply_markup(reply_markup=None)
                 await callback.message.edit_text(
-                    text="Выберите дни месяца для напоминания:",
+                    text="<b>📆 Выберите дни месяца для напоминания:</b>",
                     reply_markup=keyboards.get_days_of_month_keyboard(selected_month_days=[])
                 )
                 return
@@ -166,7 +168,7 @@ async def set_new_event_days_of_week(callback: CallbackQuery, state: FSMContext)
 
         new_markup = keyboards.get_days_of_week_keyboard(selected_days=selected_days)
 
-        await callback.message.edit_text(text="Выберите дни для повторения:", reply_markup=new_markup)
+        await callback.message.edit_text(text="<b>📆 Выберите дни для повторения:</b>", reply_markup=new_markup)
     except Exception as e:
         logging.error(e)
 
@@ -187,7 +189,8 @@ async def confirm_days(callback: CallbackQuery, state: FSMContext):
 
         await push_state(state, AddEventState.adding_remind_at)
         await callback.message.edit_text(
-            "Напишите время напоминания в формате\n«12:30, 09:00» или «1230, 0900»",
+            "⏰ <b>Напишите время напоминания в формате:</b>\n"
+            "<code>12:30, 09:00</code> или <code>1230, 0900</code>",
             reply_markup=keyboards.get_cancel_return_keyboard()
         )
     except Exception as e:
@@ -218,7 +221,7 @@ async def set_new_event_days_of_month(callback: CallbackQuery, state: FSMContext
 
         new_markup = keyboards.get_days_of_month_keyboard(selected_month_days=selected_month_days)
         await callback.message.edit_text(
-            text="Выберите дни месяца для повторения:",
+            text="<b>📆 Выберите дни месяца для повторения:</b>",
             reply_markup=new_markup
         )
     except Exception as e:
@@ -239,7 +242,7 @@ async def set_new_event_remind_at(message: Message, state: FSMContext):
             remind_time += timedelta(days=1)
 
         await state.update_data(remind_at=remind_time)
-        await message.edit_text(text="Приоритет события",
+        await message.answer(text="🎯 <b>Приоритет события</b>",
                              reply_markup=keyboards.get_priority_keyboard())
         await push_state(state, AddEventState.adding_priority)
     except Exception as e:
@@ -259,7 +262,7 @@ async def set_new_event_priority(callback: types.CallbackQuery, state: FSMContex
             await state.update_data(
                 user_id=session.query(User).filter_by(telegram_user_id=callback.from_user.id).first().id)
 
-            await callback.message.edit_text(text="Куда напомнить о событии?",
+            await callback.message.edit_text(text="📍 <b>Куда напомнить о событии?</b>",
                                              reply_markup=keyboards.get_chat_type_keyboard())
             await push_state(state, AddEventState.adding_privacy)
         except Exception as e:
@@ -270,7 +273,8 @@ async def set_new_event_priority(callback: types.CallbackQuery, state: FSMContex
 @router.callback_query(F.data == OnlyDay.TODAY.value)
 async def set_event_day_today(callback: CallbackQuery, state: FSMContext):
     await push_state(state, AddEventState.adding_remind_at)
-    await callback.message.edit_text("Напишите время напоминания в формате\n«12:30, 09:00» или «1230, 0900»",
+    await callback.message.edit_text("⏰ <b>Напишите время напоминания в формате:</b>\n"
+                                     "<code>12:30, 09:00</code> или <code>1230, 0900</code>",
                                      reply_markup=keyboards.get_cancel_return_keyboard())
 
 
@@ -282,7 +286,7 @@ async def set_new_event_remind_date(message: Message, state: FSMContext):
         if remind_time is None:
             return
         await state.update_data(remind_at=remind_time)
-        await message.answer(text="Приоритет события",
+        await message.answer(text="🎯 <b>Приоритет события</b>",
                              reply_markup=keyboards.get_priority_keyboard())
         await push_state(state, AddEventState.adding_priority)
     except Exception as e:

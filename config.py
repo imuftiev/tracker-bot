@@ -22,7 +22,7 @@ class BotConfig:
                     "3. Создавайте ивенты в личных сообщениях с ботом и прикрепляйте ID группы куда нужно отправить уведомление"
 
                 ],
-                "note": "⚠️ Примечание \n1. Убедитесь, что я уже добавлен в группу перед использованием\n2. В группе недоступны команды \t\t/add и /delete"
+                "note": "⚠️ Примечание \n1. Убедитесь, что я уже добавлен в группу перед использованием\n2. В группе недоступна команда \t/add"
             }
         }
     }
@@ -44,7 +44,8 @@ class BotConfig:
         self.cancel_title = data['cancel']['title']
         self.cancel_text = data['cancel']['message']
         self.default_text = data['default']
-        self.back_text = data['back']
+        self.back_text = data['return']
+        self.confirm = data['confirm']
         self.success_text = data['success']
         self.error_text = data['error']
         self.delete_all_text = data['delete']['all']

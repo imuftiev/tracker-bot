@@ -20,8 +20,7 @@ async def cancel_button(callback: CallbackQuery, state: FSMContext):
         if data is not None:
             await state.clear()
         session.flush()
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(text=config.cancel_text)
+        await callback.message.edit_text(text=config.cancel_text,reply_markup=None)
 
 
 @router.callback_query(F.data == InlineButtonType.RETURN.value)
@@ -62,7 +61,7 @@ async def back(callback: CallbackQuery, state: FSMContext):
             await callback.message.edit_text(
                 "Когда напомнить про событие", reply_markup=keyboards.get_repeatable_type_keyboard())
             return
-        case RepeatableEventState.adding_day:
+        case RepeatableEventState.adding_every_day:
             data = await state.get_data()
             selected_days = data.get("selected_days", [])
             await callback.message.edit_text(

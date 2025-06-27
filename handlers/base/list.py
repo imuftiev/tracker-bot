@@ -27,10 +27,10 @@ Session = sessionmaker(bind=engine)
 async def list_command(message: Message, state: FSMContext):
     await state.clear()
     if message.chat.type == "private":
-        await message.answer(text="Выбор ...", reply_markup=keyboards.get_private_events_filter_keyboard())
+        await message.answer(text = "📋 <b>Выберите, какие события вы хотите увидеть:</b>", reply_markup=keyboards.get_private_events_filter_keyboard())
         await push_state(state, EventsListFilter.events_list)
     else:
-        await message.answer(text="Выбор ...", reply_markup=keyboards.get_group_events_filter_keyboard())
+        await message.answer(text="📋 <b>Выберите, какие события вы хотите увидеть:</b>", reply_markup=keyboards.get_group_events_filter_keyboard())
         await push_state(state, EventsListFilter.events_list)
 
 
