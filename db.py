@@ -43,14 +43,14 @@ class Event(Base):
 
     def __str__(self):
         return (
-            f"<b>📎 Событие:</b> <code>  <u>{self.id}</u></code>\n"
+            f"<b>📎 Событие:</b><code><u>{self.id}</u></code>\n"
             f"<b>🔔 Название:</b> <u>{self.title}</u>\n"
-            f"<b>📝 Описание:</b> <u>{self.description or '—'}</u>\n"
+            f"<b>📝 Описание:</b> <u>{self.description or ''}</u>\n"
             f"<b>📌 Статус:</b> <u>{self.status.value}</u>\n"
             f"<b>⚡ Приоритет:</b> <u>{self.priority.value}</u>\n"
             f"<b>📆 Тип напоминания:</b> <u>{self.repeat_type.value}</u>\n"
             f"<b>⏰ Напоминать в:</b> <u>{self.remind_at}</u>.\n"
-            f"<b>Дни:</b> {self.days_of_week or '-'} {self.days_of_month or '-'}\n"
+            f"<b>Дни:</b> {self.days_of_week or ''} {self.days_of_month or ''}\n"
         )
 
     id = Column(Integer, primary_key=True)
