@@ -109,7 +109,27 @@ def schedule_one_time_event(event: Event):
 
 
 def schedule_repeatable_event(event: Event):
-    # if event.repeat_type == RepeatType.EVERY_MONTH:
+    if event.repeat_type == RepeatType.EVERY_MONTH and event.days_of_month:
+        for day in event.days_of_month:
+            if not (1 <= day <= 31):
+                logging.warning(f"[Scheduler] Неверный день месяца: {day}")
+                continue
+
+            scheduler.add_job(
+                send_reminder,
+                trigger=CronTrigger(
+                    day=day,
+                    hour=event.remind_time.hour,
+                    minute=event.remind_time.minute,
+                    timezone=moscow_tz
+                ),
+                args=[event.id],
+                id=f"event_{event.id}_day{day}",
+                replace_existing=True,
+                misfire_grace_time=60
+            )
+            logging.info(f"[Scheduler] Повторяемое событие: {event.id} - каждый {day} числа в {event.remind_time} МСК")
+
     if event.repeat_type == RepeatType.EVERY_DAY and event.days_of_week:
         for weekday in event.days_of_week:
             cron_day = DAY_OF_WEEK_MAP.get(weekday)

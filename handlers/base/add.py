@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-
 from aiogram import types
 from aiogram import Router
 from aiogram.enums import ParseMode
@@ -8,23 +7,19 @@ from aiogram.types import Message, CallbackQuery
 from sqlalchemy.orm import sessionmaker
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-
 from bot_state.state_stack import push_state
 from const.callback.callback_types import InlineButtonType
 from handlers.keyboard.inline import back, cancel_button
 from handlers.time.time import set_time_remind, set_date_remind
-
 from const.event.priority import Priority
 from const.event.repeatable import RepeatType, RepeatDays, OnlyDay
 from keyboards import keyboards
 from aiogram import F
 from handlers.filter.filter import IsPrivate
-
 from bot_state.states import AddEventState, RepeatableEventState
 from config import BotConfig
 from db import engine, User
 from keyboards.keyboards import get_cancel_return_keyboard
-
 
 config = BotConfig()
 router = Router()
@@ -125,12 +120,23 @@ async def set_new_event_repeatable(callback: types.CallbackQuery, state: FSMCont
             case RepeatType.EVERY_DAY.value:
                 await state.update_data(repeatable=True)
                 await state.update_data(repeat_type=RepeatType(callback.data))
-                await push_state(state, RepeatableEventState.adding_day)
+                await push_state(state, RepeatableEventState.adding_every_day)
 
                 await callback.message.edit_reply_markup(reply_markup=None)
                 await callback.message.edit_text(
                     text="Выберите дни для повторения:",
                     reply_markup=keyboards.get_days_of_week_keyboard(selected_days=[])
+                )
+                return
+            case RepeatType.EVERY_MONTH.value:
+                await state.update_data(repeatable=True)
+                await state.update_data(repeat_type=RepeatType(callback.data))
+                await push_state(state, RepeatableEventState.adding_every_month)
+
+                await callback.message.edit_reply_markup(reply_markup=None)
+                await callback.message.edit_text(
+                    text="Выберите дни месяца для напоминания:",
+                    reply_markup=keyboards.get_days_of_month_keyboard(selected_month_days=[])
                 )
                 return
     except Exception as e:
@@ -140,7 +146,7 @@ async def set_new_event_repeatable(callback: types.CallbackQuery, state: FSMCont
 """ Обработчик Callback вызова – Выбор дней для напоминания"""
 @router.callback_query(
     F.data.in_([d.value for d in RepeatDays] + [InlineButtonType.RETURN.value]),
-    RepeatableEventState.adding_day
+    RepeatableEventState.adding_every_day
 )
 async def set_new_event_days_of_week(callback: CallbackQuery, state: FSMContext):
     try:
@@ -170,22 +176,61 @@ async def set_new_event_days_of_week(callback: CallbackQuery, state: FSMContext)
 async def confirm_days(callback: CallbackQuery, state: FSMContext):
     try:
         data = await state.get_data()
-        selected_days = data.get("selected_days", [])
-        if not selected_days:
-            await callback.message.answer(text="Нужно выбрать хотя бы один день")
-            return
-        await state.update_data(selected_days=selected_days)
+        repeat_type = data.get("repeat_type")
+
+        if repeat_type == RepeatType.EVERY_MONTH.value:
+            selected_days = data.get("selected_month_days", [])
+            await state.update_data(days_of_month=selected_days)
+        elif repeat_type == RepeatType.EVERY_DAY.value:
+            selected_days = data.get("selected_days", [])
+            await state.update_data(days_of_week=selected_days)
+
         await push_state(state, AddEventState.adding_remind_at)
-        await callback.message.edit_text("Напишите время напоминания в формате\n«12:30, 09:00» или «1230, 0900»",
-                                         reply_markup=keyboards.get_cancel_return_keyboard())
+        await callback.message.edit_text(
+            "Напишите время напоминания в формате\n«12:30, 09:00» или «1230, 0900»",
+            reply_markup=keyboards.get_cancel_return_keyboard()
+        )
     except Exception as e:
         logging.error(e)
+
+
+
+@router.callback_query(
+    F.data.startswith("day_") | (F.data == InlineButtonType.RETURN.value),
+    RepeatableEventState.adding_every_month
+)
+async def set_new_event_days_of_month(callback: CallbackQuery, state: FSMContext):
+    try:
+        if callback.data == InlineButtonType.RETURN.value:
+            await back(callback, state)
+            return
+
+        day = callback.data.replace("day_", "")
+        data = await state.get_data()
+        selected_month_days = data.get("selected_month_days", [])
+
+        if day in selected_month_days:
+            selected_month_days.remove(day)
+        else:
+            selected_month_days.append(day)
+
+        await state.update_data(selected_month_days=selected_month_days)
+
+        new_markup = keyboards.get_days_of_month_keyboard(selected_month_days=selected_month_days)
+        await callback.message.edit_text(
+            text="Выберите дни месяца для повторения:",
+            reply_markup=new_markup
+        )
+    except Exception as e:
+        logging.error(e)
+
 
 
 """ Обработчик сообщения – Время напоминания 'HH:MM' """
 @router.message(F.text, AddEventState.adding_remind_at)
 async def set_new_event_remind_at(message: Message, state: FSMContext):
     try:
+
         now = datetime.now()
         remind_time = await set_time_remind(message)
         if remind_time is None:
@@ -194,7 +239,7 @@ async def set_new_event_remind_at(message: Message, state: FSMContext):
             remind_time += timedelta(days=1)
 
         await state.update_data(remind_at=remind_time)
-        await message.answer(text="Приоритет события",
+        await message.edit_text(text="Приоритет события",
                              reply_markup=keyboards.get_priority_keyboard())
         await push_state(state, AddEventState.adding_priority)
     except Exception as e:

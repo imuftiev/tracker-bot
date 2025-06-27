@@ -16,7 +16,7 @@ config = config.BotConfig()
 
 
 """
-    Отметка выбранных дней для повторений при создании нового ивента.
+    Отметка выбранных дней при напоминании Ежедневно для повторений при создании нового ивента.
 """
 def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboardMarkup:
     selected_days = selected_days or []
@@ -29,6 +29,41 @@ def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboard
             text=text,
             callback_data=day.value
         )])
+
+    buttons.append([
+        InlineKeyboardButton(text="✅ Подтвердить", callback_data=InlineButtonType.CONFIRM.value),
+        InlineKeyboardButton(text="⬅️ Назад", callback_data=InlineButtonType.RETURN.value),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+"""
+    Отметка выбранных дней при напоминании Ежемесячно для повторений при создании нового ивента.
+"""
+
+def get_days_of_month_keyboard(selected_month_days: list[str] = None) -> InlineKeyboardMarkup:
+    selected_month_days = selected_month_days or []
+    buttons = []
+
+    row = []
+    for day in range(1, 32):
+        day_str = str(day)
+        if day_str in selected_month_days:
+            text = f"✅ {day}"
+        else:
+            text = str(day)
+
+        row.append(
+            InlineKeyboardButton(text=text, callback_data=f"day_{day}")
+        )
+
+        if len(row) == 4:
+            buttons.append(row)
+            row = []
+
+    if row:
+        buttons.append(row)
 
     buttons.append([
         InlineKeyboardButton(text="✅ Подтвердить", callback_data=InlineButtonType.CONFIRM.value),

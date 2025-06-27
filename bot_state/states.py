@@ -28,7 +28,8 @@ class UpdateEventState(StatesGroup):
 
 
 class RepeatableEventState(StatesGroup):
-    adding_day = State()
+    adding_every_day = State()
+    adding_every_month = State()
 
 
 class GroupLinkState(StatesGroup):
