@@ -122,7 +122,6 @@ async def priority_list_handler(callback: types.CallbackQuery, state: FSMContext
     await callback.message.edit_text(text="По какому статусу", reply_markup=keyboards.get_status_keyboard())
 
 
-
 @router.callback_query(lambda c: c.data in [p.value for p in Priority], EventsListFilter.events_priority_filter)
 async def priority_list_filter(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup(reply_markup=None)
@@ -136,6 +135,9 @@ async def priority_list_filter(callback: types.CallbackQuery, state: FSMContext)
                     Event.telegram_chat_id == chat_id,
                     Event.priority == priority_value
                 ).all()
+                for event in events:
+                    await callback.message.answer(text=str(event), parse_mode="HTML",
+                                                  reply_markup=keyboards.get_event_action_keyboard(event.id))
 
             else:
                 groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
@@ -149,12 +151,11 @@ async def priority_list_filter(callback: types.CallbackQuery, state: FSMContext)
                         Event.priority == priority_value
                     ).all()
                     events.extend(group_events)
+                    for event in events:
+                        await callback.message.answer(text=str(event), parse_mode="HTML")
 
             if not events:
                 await callback.message.edit_text("Нет событий с таким приоритетом.")
-
-            for event in events:
-                await callback.message.answer(text=str(event), parse_mode="HTML")
             await state.clear()
     except Exception as e:
         logging.error(e)
@@ -173,6 +174,9 @@ async def status_list_filter(callback: types.CallbackQuery, state: FSMContext):
                     Event.telegram_chat_id == chat_id,
                     Event.status == status_value
                 ).all()
+                for event in events:
+                    await callback.message.answer(text=str(event), parse_mode="HTML",
+                                                  reply_markup=keyboards.get_event_action_keyboard(event.id))
 
             else:
                 groups = session.query(Group).filter_by(telegram_group_id=chat_id).all()
@@ -186,12 +190,11 @@ async def status_list_filter(callback: types.CallbackQuery, state: FSMContext):
                         Event.status == status_value
                     ).all()
                     events.extend(group_events)
+                    for event in events:
+                        await callback.message.answer(text=str(event), parse_mode="HTML")
 
             if not events:
                 await callback.message.edit_text("Нет событий с таким статусом.")
-
-            for event in events:
-                await callback.message.answer(text=str(event), parse_mode="HTML")
             await state.clear()
     except Exception as e:
         logging.error(e)

@@ -37,6 +37,7 @@ async def set_new_event_private(callback: types.CallbackQuery, state: FSMContext
                 priority=Priority(data.get("priority")),
                 chat_type=Chat.PRIVATE.value,
                 days_of_week=data.get("selected_days"),
+                days_of_month=data.get("selected_month_days"),
                 telegram_chat_id=callback.message.chat.id,
                 user_id=user.id
             )

@@ -55,6 +55,7 @@ async def set_new_event_group(message: Message, state: FSMContext):
                 remind_at=data.get("remind_at"),
                 remind_time=data.get("remind_at").time(),
                 days_of_week=data.get("selected_days"),
+                days_of_month=data.get("selected_month_days"),
                 priority=Priority(data.get("priority")),
                 chat_type=Chat.GROUP.value,
                 telegram_chat_id=message.chat.id,
