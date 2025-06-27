@@ -6,15 +6,16 @@ from aiogram import Router
 from aiogram.enums import ParseMode
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.orm import sessionmaker
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
+from bot_state.state_stack import push_state
 from const.callback.callback_types import InlineButtonType
 from handlers.keyboard.inline import back, cancel_button
-from handlers.reminders.time import set_time_remind
+from handlers.time.time import set_time_remind, set_date_remind
 
 from const.event.priority import Priority
-from const.event.repeatable import RepeatType, RepeatDays
+from const.event.repeatable import RepeatType, RepeatDays, OnlyDay
 from keyboards import keyboards
 from aiogram import F
 from handlers.filter.filter import IsPrivate
@@ -35,20 +36,6 @@ Session = sessionmaker(bind=engine)
     Инициализация начального состояния происходит путем ввода команды – /add
     Сброс состояния бота – /cancel
 """
-async def push_state(state: FSMContext, new_state):
-    try:
-        logging.info("Calling push_state")
-        data = await state.get_data()
-        history = data.get("history", [])
-        current_state = await state.get_state()
-        logging.info(f"Current state: {current_state}")
-        if current_state:
-            history.append(current_state)
-        await state.update_data(history=history)
-        await state.set_state(new_state)
-    except Exception as e:
-        logging.error(e)
-
 
 """ Обработчик команды /add """
 @router.message(Command("add"), IsPrivate())
@@ -129,10 +116,11 @@ async def set_new_event_repeatable(callback: types.CallbackQuery, state: FSMCont
             case RepeatType.ONLY_DAY.value:
                 await state.update_data(repeatable=False)
                 await state.update_data(repeat_type=RepeatType(callback.data))
-                await push_state(state, AddEventState.adding_remind_at)
+                await push_state(state, AddEventState.adding_remind_date)
                 await callback.message.edit_reply_markup(reply_markup=None)
-                await callback.message.edit_text("Напишите время напоминания в формате '12:30' или '1230'",
-                                                 reply_markup=keyboards.get_cancel_return_keyboard())
+                await callback.message.edit_text("Запишите дату и время, когда нужно напомнить в формате"
+                                                 "\n«Месяц.День.Год Часы:Минуты»\nПример: «14.08.2025 09:00»",
+                                                 reply_markup=keyboards.get_day_options_keyboard())
                 return
             case RepeatType.EVERY_DAY.value:
                 await state.update_data(repeatable=True)
@@ -233,8 +221,24 @@ async def set_new_event_priority(callback: types.CallbackQuery, state: FSMContex
             logging.error(e)
 
 
-@router.callback_query(F.data == RepeatDays.ALL_DAYS.value)
-async def all_days_event(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(repeat_type=RepeatType(callback))
-    await callback.message.answer(text="Напишите время напоминания в формате «12:30, 09:00» или «1230, 0900»")
+""" Обработчик сообщения – Сегодняшняя дата напоминания  """
+@router.callback_query(F.data == OnlyDay.TODAY.value)
+async def set_event_day_today(callback: CallbackQuery, state: FSMContext):
     await push_state(state, AddEventState.adding_remind_at)
+    await callback.message.edit_text("Напишите время напоминания в формате\n«12:30, 09:00» или «1230, 0900»",
+                                     reply_markup=keyboards.get_cancel_return_keyboard())
+
+
+""" Обработчик сообщения – Определенная дата напоминания 'mm.dd.year HH:MM' """
+@router.message(F.text, AddEventState.adding_remind_date)
+async def set_new_event_remind_date(message: Message, state: FSMContext):
+    try:
+        remind_time = await set_date_remind(message)
+        if remind_time is None:
+            return
+        await state.update_data(remind_at=remind_time)
+        await message.answer(text="Приоритет события",
+                             reply_markup=keyboards.get_priority_keyboard())
+        await push_state(state, AddEventState.adding_priority)
+    except Exception as e:
+        logging.error(e)

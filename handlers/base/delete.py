@@ -4,6 +4,9 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.orm import sessionmaker
+from apscheduler.jobstores.base import JobLookupError
+from scheduler.apscheduler import scheduler
+
 
 from const.callback.delete import DeleteEvent
 from db import Event, engine
@@ -37,9 +40,12 @@ async def delete_all_events(callback: CallbackQuery):
                 await callback.message.answer(text=config.delete_list_empty)
                 return
             for event in events:
+                remove_scheduler_jobs(event.id)
                 session.delete(event)
             session.commit()
+
         await callback.message.answer(text=config.delete_all_text)
+
     except Exception as error:
         logging.error(error)
 
@@ -66,8 +72,24 @@ async def delete_event_by_id(callback: CallbackQuery):
             session.delete(event)
             session.commit()
 
+        remove_scheduler_jobs(event_id)
+
         await callback.message.edit_text("🗑️ Событие успешно удалено.", reply_markup=None)
 
     except Exception as e:
         logging.error(e)
         await callback.message.answer("Ошибка при удалении события.")
+
+
+def remove_scheduler_jobs(event_id: int):
+    try:
+        scheduler.remove_job(f"event_{event_id}")
+    except JobLookupError:
+        pass
+
+    for suffix in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun', '*']:
+        try:
+            scheduler.remove_job(f"event_{event_id}_{suffix}")
+        except JobLookupError:
+            continue
+

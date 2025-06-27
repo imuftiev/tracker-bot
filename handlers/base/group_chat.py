@@ -14,7 +14,7 @@ from const.event.repeatable import RepeatType
 from const.event.status import Status
 from db import engine, User, Event, Group
 from handlers.base.add import push_state
-from scheduler.apscheduler import schedule_repeatable_event
+from scheduler.apscheduler import schedule_repeatable_event, schedule_one_time_event
 
 Session = sessionmaker(bind=engine)
 router = Router()
@@ -64,7 +64,10 @@ async def set_new_event_group(message: Message, state: FSMContext):
             session.add(new_event)
             session.commit()
             session.refresh(new_event)
-            schedule_repeatable_event(new_event)
+            if not new_event.repeatable:
+                schedule_one_time_event(new_event)
+            else:
+                schedule_repeatable_event(new_event)
             await state.clear()
             await message.answer(text=config.success_text)
         except Exception as e:

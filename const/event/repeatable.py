@@ -18,3 +18,8 @@ class RepeatDays(Enum):
     SATURDAY = 'Суббота'
     SUNDAY = 'Воскресенье'
     ALL_DAYS = 'Все дни'
+
+
+class OnlyDay(Enum):
+    TODAY = 'Сегодня'
+    DIF = 'DAY'

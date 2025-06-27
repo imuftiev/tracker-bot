@@ -6,10 +6,11 @@ from const.event.chat import Chat
 from const.callback.delete import DeleteEvent
 from const.event.status import Status
 from const.event.priority import Priority
-from const.event.repeatable import RepeatType, RepeatDays
+from const.event.repeatable import RepeatType, RepeatDays, OnlyDay
 from const.callback.callback_types import InlineButtonType
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from const.event.repeatable import RepeatDays
+from const.event.update import UpdatePropEvent
 
 config = config.BotConfig()
 
@@ -35,6 +36,14 @@ def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboard
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_day_options_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=OnlyDay.TODAY.value, callback_data=OnlyDay.TODAY.value))
+    builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value))
+    builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value))
+    return builder.as_markup(resize_keyboard=True)
 
 
 """
@@ -94,6 +103,17 @@ def get_priority_keyboard() -> InlineKeyboardMarkup:
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value))
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value))
     return builder.as_markup(resize_keyboard=True)
+
+
+def get_update_status_keyboard(event_id: int) -> InlineKeyboardMarkup:
+    buttons = [
+        types.InlineKeyboardButton(
+            text=status.value,
+            callback_data=f"select_status:{event_id}:{status.name}"
+        )
+        for status in Status
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=[[btn] for btn in buttons])
 
 
 """
@@ -175,6 +195,21 @@ def get_delete_type_keyboard() -> InlineKeyboardMarkup:
     )
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
                 width=8)
+    return builder.as_markup(resize_keyboard=True)
+
+
+"""
+    Прикрепляется к сообщению события при вызове коллбэк-кнопки Изменить.
+    Работает только в личном чате.
+"""
+def update_event_keyboard(event_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        types.InlineKeyboardButton(text=UpdatePropEvent.DESCRIPTION.value, callback_data=f"update_description:{event_id}"),
+        types.InlineKeyboardButton(text=UpdatePropEvent.STATUS.value, callback_data=f"update_status:{event_id}"),
+        types.InlineKeyboardButton(text=UpdatePropEvent.PRIORITY.value, callback_data=f"update_priority:{event_id}"),
+    )
+    builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=f"return_to_event:{event_id}"), width=8)
     return builder.as_markup(resize_keyboard=True)
 
 
