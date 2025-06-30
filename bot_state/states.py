@@ -12,7 +12,6 @@ class AddEventState(StatesGroup):
     adding_remind_at = State()
     adding_remind_date = State()
     adding_repeat_type = State()
-    adding_chat_name = State()
 
     adding_privacy = State()
     adding_group = State()
@@ -30,6 +29,7 @@ class UpdateEventState(StatesGroup):
 class RepeatableEventState(StatesGroup):
     adding_every_day = State()
     adding_every_month = State()
+    adding_every_year = State()
 
 
 class GroupLinkState(StatesGroup):
@@ -40,3 +40,8 @@ class EventsListFilter(StatesGroup):
     events_list = State()
     events_priority_filter = State()
     events_status_filter = State()
+
+
+class LinkGroupState(StatesGroup):
+    attach_chat_name = State()
+    attach_id = State()

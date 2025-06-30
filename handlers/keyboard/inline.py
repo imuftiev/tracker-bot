@@ -61,7 +61,7 @@ async def back(callback: CallbackQuery, state: FSMContext):
             await callback.message.edit_text(
                 "Когда напомнить про событие", reply_markup=keyboards.get_repeatable_type_keyboard())
             return
-        case RepeatableEventState.adding_every_day:
+        case RepeatableEventState.adding_days:
             data = await state.get_data()
             selected_days = data.get("selected_days", [])
             await callback.message.edit_text(
@@ -71,6 +71,10 @@ async def back(callback: CallbackQuery, state: FSMContext):
         case AddEventState.adding_remind_at:
             await callback.message.edit_text("Напишите время напоминания в формате\n«12:30, 09:00» или «1230, 0900»",
                                          reply_markup=keyboards.get_cancel_return_keyboard())
+            return
+        case AddEventState.adding_privacy:
+            await callback.message.edit_text(text="📍 <b>Куда напомнить о событии?</b>",
+                                             reply_markup=keyboards.get_chat_type_keyboard())
             return
         case AddEventState.adding_priority:
             await callback.message.edit_text(

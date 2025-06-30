@@ -31,7 +31,15 @@ class User(Base):
 
 class Group(Base):
     __tablename__ = "groups"
+
+
+    def __str__(self):
+        return (
+            f"🟢 {self.name}"
+        )
+
     id = Column(Integer, primary_key=True)
+    name = Column(String(30), nullable=False)
     telegram_group_id = Column(BigInteger, unique=False, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="groups")
@@ -43,7 +51,7 @@ class Event(Base):
 
     def __str__(self):
         return (
-            f"<b>📎 Событие:</b><code><u>{self.id}</u></code>\n"
+            f"<b>📎 Событие: </b><code><u>{self.id}</u></code>\n"
             f"<b>🔔 Название:</b> <u>{self.title}</u>\n"
             f"<b>📝 Описание:</b> <u>{self.description or ''}</u>\n"
             f"<b>📌 Статус:</b> <u>{self.status.value}</u>\n"
@@ -74,6 +82,7 @@ class Event(Base):
                          default=RepeatType.ONLY_DAY)
     days_of_week = Column(ARRAY(String))
     days_of_month = Column(ARRAY(Integer))
+    month = Column(ARRAY(Integer), nullable=True)
     chat_type = Column(String(10), nullable=True, default=None)
     telegram_chat_id = Column(BigInteger, nullable=False)
     group_id = Column(Integer, ForeignKey('groups.id'), nullable=True)

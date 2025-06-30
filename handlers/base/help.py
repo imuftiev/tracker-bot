@@ -17,6 +17,8 @@ Session = sessionmaker(bind=engine)
 """
     Обработчик команды /help
 """
+
+
 @router.message(Command("help"))
 async def help_command(message: Message) -> None:
     try:

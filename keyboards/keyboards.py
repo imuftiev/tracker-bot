@@ -1,5 +1,9 @@
+import logging
+
+from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
+from sqlalchemy.orm import sessionmaker
 
 import config
 from const.event.chat import Chat
@@ -7,13 +11,14 @@ from const.callback.delete import DeleteEvent
 from const.event.status import Status
 from const.event.priority import Priority
 from const.event.repeatable import RepeatType, RepeatDays, OnlyDay
-from const.callback.callback_types import InlineButtonType
+from const.callback.callback_types import InlineButtonType, RepeatTypeInlineButton
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from const.event.repeatable import RepeatDays
 from const.event.update import UpdatePropEvent
+from db import engine, Group, User
 
 config = config.BotConfig()
-
+Session = sessionmaker(bind=engine)
 
 """
     Отметка выбранных дней при напоминании Ежедневно для повторений при создании нового ивента.
@@ -41,7 +46,6 @@ def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboard
 """
     Отметка выбранных дней при напоминании Ежемесячно для повторений при создании нового ивента.
 """
-
 def get_days_of_month_keyboard(selected_month_days: list[str] = None) -> InlineKeyboardMarkup:
     selected_month_days = selected_month_days or []
     buttons = []
@@ -70,9 +74,39 @@ def get_days_of_month_keyboard(selected_month_days: list[str] = None) -> InlineK
         InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
         InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
     ])
-
-
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_months_keyboard(selected_months: list[str] = None) -> InlineKeyboardMarkup:
+    selected_months = selected_months or []
+    buttons = []
+
+    row = []
+    for month in range(1, 13):
+        month_str = str(month)
+        if month_str in selected_months:
+            text = f"✅ {month}"
+        else:
+            text = str(month)
+
+        row.append(
+            InlineKeyboardButton(text=text, callback_data=f"month_{month}")
+        )
+
+        if len(row) == 4:
+            buttons.append(row)
+            row = []
+
+    if row:
+        buttons.append(row)
+
+    buttons.append([
+        InlineKeyboardButton(text=config.confirm, callback_data=RepeatTypeInlineButton.CONFIRM_MONTH.value),
+        InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
+        InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
 
 
 def get_day_options_keyboard() -> InlineKeyboardMarkup:
@@ -198,9 +232,18 @@ def get_group_events_filter_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup(resize_keyboard=True)
 
 
-def get_only_day_keyboard() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.row()
+def get_groups_keyboard(callback : types.CallbackQuery) -> InlineKeyboardMarkup:
+    try:
+        builder = InlineKeyboardBuilder()
+        with Session() as session:
+            user = session.query(User).filter_by(telegram_user_id=callback.from_user.id).first()
+            groups = session.query(Group).filter_by(user_id=user.id).all()
+            for group in groups:
+                builder.row(types.InlineKeyboardButton(text=str(group), callback_data=str(group.telegram_group_id)))
+            builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value))
+        return builder.as_markup(resize_keyboard=True)
+    except Exception as e:
+        logging.error(e)
 
 
 """
@@ -213,7 +256,7 @@ def get_chat_type_keyboard() -> InlineKeyboardMarkup:
         types.InlineKeyboardButton(text="В этот чат", callback_data=Chat.PRIVATE.value)
     )
     builder.row(
-        types.InlineKeyboardButton(text="В группу (бот должен там быть)", callback_data=Chat.GROUP.value)
+        types.InlineKeyboardButton(text="В группу", callback_data=Chat.GROUP.value)
     )
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value),
                 types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value),
@@ -265,6 +308,23 @@ def get_event_action_keyboard(event_id: int) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="❌ Удалить",
                     callback_data=f"delete_event:{event_id}"
+                )
+            ]
+        ]
+    )
+
+
+"""
+    Вывод всех прикрепленных пользователем групп.
+    Работает только в личном чате.
+"""
+def get_group_action_keyboard(group_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="❌ Удалить",
+                    callback_data=f"delete_group:{group_id}"
                 )
             ]
         ]

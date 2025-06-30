@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.triggers.date import DateTrigger
@@ -75,6 +76,17 @@ async def send_reminder(event_id: int):
 
         if not event.repeatable:
             event.sent = True
+            await session.delete(event)
+            try:
+                scheduler.remove_job(f"event_{event_id}")
+            except JobLookupError:
+                pass
+
+            for suffix in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun', '*']:
+                try:
+                    scheduler.remove_job(f"event_{event_id}_{suffix}")
+                except JobLookupError:
+                    continue
             await session.commit()
 
 
@@ -109,6 +121,23 @@ def schedule_one_time_event(event: Event):
 
 
 def schedule_repeatable_event(event: Event):
+    if event.repeat_type == RepeatType.EVERY_YEAR and event.days_of_month and event.month:
+        for month in event.month:
+            for day in event.days_of_month:
+                scheduler.add_job(
+                    send_reminder,
+                    trigger=CronTrigger(
+                        month=month,
+                        day=day,
+                        hour=event.remind_time.hour,
+                        minute=event.remind_time.minute,
+                        timezone=moscow_tz
+                    ),
+                    args=[event.id],
+                    id=f"event_{event.id}_m{month}_d{day}",
+                    replace_existing=True,
+                    misfire_grace_time=60
+                )
     if event.repeat_type == RepeatType.EVERY_MONTH and event.days_of_month:
         for day in event.days_of_month:
             if not (1 <= day <= 31):
