@@ -159,7 +159,7 @@ def schedule_repeatable_event(event: Event):
             )
             logging.info(f"[Scheduler] Повторяемое событие: {event.id} - каждый {day} числа в {event.remind_time} МСК")
 
-    if event.repeat_type == RepeatType.EVERY_DAY and event.days_of_week:
+    if event.repeat_type == RepeatType.EVERY_WEEK and event.days_of_week:
         for weekday in event.days_of_week:
             cron_day = DAY_OF_WEEK_MAP.get(weekday)
             if not cron_day:
@@ -180,6 +180,7 @@ def schedule_repeatable_event(event: Event):
                 misfire_grace_time=60
             )
             logging.info(f"[Scheduler] Повторяемое событие: {event.id} в {cron_day} - {event.remind_time} МСК")
+
 
 async def load_all_events():
     async with AsyncSessionLocal() as session:

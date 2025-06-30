@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: ba26d18663a5
+Revision ID: 7b943ae42064
 Revises: 
-Create Date: 2025-06-30 08:22:42.753209
+Create Date: 2025-06-30 12:58:39.257474
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'ba26d18663a5'
+revision: str = '7b943ae42064'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -48,9 +48,10 @@ def upgrade() -> None:
     sa.Column('sent', sa.Boolean(), nullable=False),
     sa.Column('remind_at', sa.DateTime(), nullable=False),
     sa.Column('remind_time', sa.Time(), server_default=sa.text("'08:00:00'"), nullable=False),
-    sa.Column('repeat_type', postgresql.ENUM('EVERY_DAY', 'EVERY_WEEK', 'EVERY_MONTH', 'EVERY_YEAR', 'ONLY_DAY', name='repeat_type_enum'), nullable=False),
+    sa.Column('repeat_type', postgresql.ENUM('EVERY_WEEK', 'EVERY_MONTH', 'EVERY_YEAR', 'ONLY_DAY', name='repeat_type_enum'), nullable=False),
     sa.Column('days_of_week', sa.ARRAY(sa.String()), nullable=True),
     sa.Column('days_of_month', sa.ARRAY(sa.Integer()), nullable=True),
+    sa.Column('month', sa.ARRAY(sa.Integer()), nullable=True),
     sa.Column('chat_type', sa.String(length=10), nullable=True),
     sa.Column('telegram_chat_id', sa.BigInteger(), nullable=False),
     sa.Column('group_id', sa.Integer(), nullable=True),

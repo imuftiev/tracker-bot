@@ -29,6 +29,7 @@ async def set_time_remind(message: Message) -> datetime | None:
         await message.answer("❌ Неверный формат времени. Введите в формате 12:30 или 1230.")
         return None
 
+
 async def set_date_remind(message: Message) -> datetime | None:
     try:
         date_input = message.text.strip()
@@ -56,7 +57,6 @@ async def set_date_remind(message: Message) -> datetime | None:
     except Exception as e:
         logging.error(f"[Ошибка парсинга даты]: {e}")
         await message.answer("📅 <i>Формат:</i>\n<code>День.Месяц.Год Часы:Минуты</code>\n"
-                                                 "🔹 <b>Пример:</b> <code>14.08.2025 09:00</code>",
+                             "🔹 <b>Пример:</b> <code>14.08.2025 09:00</code>",
                              reply_markup=get_cancel_return_keyboard())
         return None
-

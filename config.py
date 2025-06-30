@@ -25,7 +25,7 @@ class BotConfig:
                 ],
                 "note": "⚠️ Примечание \n1. Убедитесь, что я уже добавлен в группу перед использованием\n"
                         "2. В группе недоступны команды\n<code>/add</code>, <code>/groups</code> и <code>/link</code>",
-                "author":"<b>creator</b>: @ilyas_mn"
+                "author": "<b>creator</b>: @ilyas_mn"
             }
         }
     }

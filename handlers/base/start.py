@@ -16,6 +16,8 @@ Session = sessionmaker(bind=engine)
 """
     Обработчик команды /start
 """
+
+
 @router.message(Command("start"))
 async def start_command(message: Message):
     with Session() as session:

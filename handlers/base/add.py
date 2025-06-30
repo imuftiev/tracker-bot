@@ -132,7 +132,7 @@ async def set_new_event_repeatable(callback: types.CallbackQuery, state: FSMCont
                                                  "🔹 <b>Пример:</b> <code>14.08.2025 09:00</code>",
                                                  reply_markup=keyboards.get_day_options_keyboard())
                 return
-            case RepeatType.EVERY_DAY.value:
+            case RepeatType.EVERY_WEEK.value:
                 await state.update_data(repeatable=True)
                 await state.update_data(repeat_type=RepeatType(callback.data))
                 await push_state(state, RepeatableEventState.adding_every_day)
@@ -213,7 +213,7 @@ async def confirm_days(callback: CallbackQuery, state: FSMContext):
         if repeat_type == RepeatType.EVERY_MONTH.value:
             selected_days = data.get("selected_month_days", [])
             await state.update_data(days_of_month=selected_days)
-        elif repeat_type == RepeatType.EVERY_DAY.value:
+        elif repeat_type == RepeatType.EVERY_WEEK.value:
             selected_days = data.get("selected_days", [])
             await state.update_data(days_of_week=selected_days)
 
