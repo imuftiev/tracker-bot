@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+  bot:
+    build: .
+    container_name: event-tracker-bot
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE}
+
+    depends_on:
+      - db
+    restart: always
+    volumes:
+      - .:/app
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
