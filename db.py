@@ -32,7 +32,6 @@ class User(Base):
 class Group(Base):
     __tablename__ = "groups"
 
-
     def __str__(self):
         return (
             f"🟢 {self.name}"

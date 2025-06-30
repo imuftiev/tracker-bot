@@ -22,7 +22,8 @@ botconfig = BotConfig()
 
 async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp.include_routers(start.router, help.router, add.router, link.router, groups.router, inline.router, private_chat.router, group_chat.router,
+    dp.include_routers(start.router, help.router, add.router, link.router, groups.router, inline.router,
+                       private_chat.router, group_chat.router,
                        list.router, update.router, default.router, delete.router)
     scheduler.start()
     await load_all_events()

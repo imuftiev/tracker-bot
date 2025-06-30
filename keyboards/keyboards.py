@@ -23,6 +23,8 @@ Session = sessionmaker(bind=engine)
 """
     Отметка выбранных дней при напоминании Ежедневно для повторений при создании нового ивента.
 """
+
+
 def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboardMarkup:
     selected_days = selected_days or []
     buttons = []
@@ -46,6 +48,8 @@ def get_days_of_week_keyboard(selected_days: list[str] = None) -> InlineKeyboard
 """
     Отметка выбранных дней при напоминании Ежемесячно для повторений при создании нового ивента.
 """
+
+
 def get_days_of_month_keyboard(selected_month_days: list[str] = None) -> InlineKeyboardMarkup:
     selected_month_days = selected_month_days or []
     buttons = []
@@ -108,7 +112,6 @@ def get_months_keyboard(selected_months: list[str] = None) -> InlineKeyboardMark
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-
 def get_day_options_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text=OnlyDay.TODAY.value, callback_data=OnlyDay.TODAY.value))
@@ -121,6 +124,8 @@ def get_day_options_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению для отмены действия.
     Работает только в личном чате.
 """
+
+
 def get_cancel_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text=config.cancel_title, callback_data=InlineButtonType.CANCEL.value))
@@ -131,6 +136,8 @@ def get_cancel_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению для отмены и возврата предыдущего действия.
     Работает только в личном чате.
 """
+
+
 def get_cancel_return_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text=config.back_text, callback_data=InlineButtonType.RETURN.value))
@@ -142,10 +149,11 @@ def get_cancel_return_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению при создании нового ивента при выборе периодичности событий.
     Работает только в личном чате.
 """
+
+
 def get_repeatable_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inline_keyboard = [
-        types.InlineKeyboardButton(text=RepeatType.EVERY_DAY.value, callback_data=RepeatType.EVERY_DAY.value),
         types.InlineKeyboardButton(text=RepeatType.EVERY_WEEK.value, callback_data=RepeatType.EVERY_WEEK.value),
         types.InlineKeyboardButton(text=RepeatType.EVERY_MONTH.value, callback_data=RepeatType.EVERY_MONTH.value),
         types.InlineKeyboardButton(text=RepeatType.EVERY_YEAR.value, callback_data=RepeatType.EVERY_YEAR.value),
@@ -161,6 +169,8 @@ def get_repeatable_type_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению при создании нового ивента при выборе приоритета событий.
     Работает только в личном чате.
 """
+
+
 def get_priority_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     inline_keyboard = [
@@ -191,6 +201,8 @@ def get_update_status_keyboard(event_id: int) -> InlineKeyboardMarkup:
     Прикрепляется к сообщению при создании нового ивента при выборе статуса событий.
     Работает только в личном чате.
 """
+
+
 def get_status_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(text=Status.TO_DO.value, callback_data=Status.TO_DO.value))
@@ -206,6 +218,8 @@ def get_status_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению при выборе фильтра всех доступных событий.
     Работает только в личном чате.
 """
+
+
 def get_private_events_filter_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(text="По статусу", callback_data='status'))
@@ -222,6 +236,8 @@ def get_private_events_filter_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению при выборе фильтра всех доступных событий.
     Работает только в группе.
 """
+
+
 def get_group_events_filter_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(text="По статусу", callback_data='status'))
@@ -232,7 +248,7 @@ def get_group_events_filter_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup(resize_keyboard=True)
 
 
-def get_groups_keyboard(callback : types.CallbackQuery) -> InlineKeyboardMarkup:
+def get_groups_keyboard(callback: types.CallbackQuery) -> InlineKeyboardMarkup:
     try:
         builder = InlineKeyboardBuilder()
         with Session() as session:
@@ -250,6 +266,8 @@ def get_groups_keyboard(callback : types.CallbackQuery) -> InlineKeyboardMarkup:
     Прикрепляется к сообщению при выборе куда отправить уведомление, в личный чат или в группу.
     Работает только в личном чате.
 """
+
+
 def get_chat_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -268,6 +286,8 @@ def get_chat_type_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению события при вводе команда /delete.
     Работает только в личном чате.
 """
+
+
 def get_delete_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -282,10 +302,13 @@ def get_delete_type_keyboard() -> InlineKeyboardMarkup:
     Прикрепляется к сообщению события при вызове коллбэк-кнопки Изменить.
     Работает только в личном чате.
 """
+
+
 def update_event_keyboard(event_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        types.InlineKeyboardButton(text=UpdatePropEvent.DESCRIPTION.value, callback_data=f"update_description:{event_id}"),
+        types.InlineKeyboardButton(text=UpdatePropEvent.DESCRIPTION.value,
+                                   callback_data=f"update_description:{event_id}"),
         types.InlineKeyboardButton(text=UpdatePropEvent.STATUS.value, callback_data=f"update_status:{event_id}"),
         types.InlineKeyboardButton(text=UpdatePropEvent.PRIORITY.value, callback_data=f"update_priority:{event_id}"),
     )
@@ -297,6 +320,8 @@ def update_event_keyboard(event_id: int) -> InlineKeyboardMarkup:
     Прикрепляется к сообщению события при выводе всех существующих событий.
     Работает только при выводе всех событий в личном чате.
 """
+
+
 def get_event_action_keyboard(event_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -318,6 +343,8 @@ def get_event_action_keyboard(event_id: int) -> InlineKeyboardMarkup:
     Вывод всех прикрепленных пользователем групп.
     Работает только в личном чате.
 """
+
+
 def get_group_action_keyboard(group_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

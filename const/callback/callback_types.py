@@ -6,5 +6,6 @@ class InlineButtonType(Enum):
     RETURN = 'RETURN'
     CONFIRM = 'CONFIRM'
 
+
 class RepeatTypeInlineButton(Enum):
     CONFIRM_MONTH = 'CONFIRM_MONTH'
