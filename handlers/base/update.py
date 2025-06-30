@@ -110,7 +110,7 @@ async def process_new_priority(callback: CallbackQuery, state: FSMContext):
             event.priority = Priority(callback.data)
             event.updated_at = datetime.now()
             session.commit()
-            await callback.message.edit_text("Приоритет успешно обновлен ✅")
+            await callback.message.edit_text(f"<b>Приоритет</b> {event_id} события <b>обновлен</b> ✅")
         await state.clear()
     except Exception as e:
         logging.error(e)
@@ -131,7 +131,7 @@ async def process_new_status(callback: CallbackQuery, state: FSMContext):
             event.status = Status(callback.data)
             event.updated_at = datetime.now()
             session.commit()
-            await callback.message.edit_text("Статус успешно обновлен ✅")
+            await callback.message.edit_text(f"<b>Статус</b> {event_id} события <b>обновлен</b> ✅")
         await state.clear()
     except Exception as e:
         logging.error(e)
@@ -155,10 +155,11 @@ async def process_new_description(message: Message, state: FSMContext):
             event.updated_at = datetime.now()
             session.commit()
 
-        await message.answer("Описание обновлено ✅")
+        await message.answer(f"<b>Описание</b> {event_id} события <b>обновлен</b> ✅")
         await state.clear()
     except Exception as e:
         logging.error(e)
+
 
 @router.callback_query(F.data.startswith("return_to_event:"))
 async def return_to_event_handler(callback: CallbackQuery):
@@ -170,7 +171,8 @@ async def return_to_event_handler(callback: CallbackQuery):
             if not event:
                 await callback.message.edit_text("Событие не найдено.")
                 return
-        await callback.message.edit_text(str(event), parse_mode="HTML", reply_markup=get_event_action_keyboard(event_id))
+        await callback.message.edit_text(str(event), parse_mode="HTML",
+                                         reply_markup=get_event_action_keyboard(event_id))
     except Exception as e:
         logging.error(e)
         await callback.message.answer("Ошибка при возврате к событию.")

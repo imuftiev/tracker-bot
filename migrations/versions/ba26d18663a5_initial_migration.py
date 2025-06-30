@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 018bdc678bdc
+Revision ID: ba26d18663a5
 Revises: 
-Create Date: 2025-06-20 16:45:08.984124
+Create Date: 2025-06-30 08:22:42.753209
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '018bdc678bdc'
+revision: str = 'ba26d18663a5'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,11 +30,11 @@ def upgrade() -> None:
     )
     op.create_table('groups',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('telegram_group_id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(length=30), nullable=False),
+    sa.Column('telegram_group_id', sa.BigInteger(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('telegram_group_id')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('events',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -48,9 +48,10 @@ def upgrade() -> None:
     sa.Column('sent', sa.Boolean(), nullable=False),
     sa.Column('remind_at', sa.DateTime(), nullable=False),
     sa.Column('remind_time', sa.Time(), server_default=sa.text("'08:00:00'"), nullable=False),
-    sa.Column('repeat_type', postgresql.ENUM('EVERY_DAY', 'EVERY_WEEK', 'EVERY_MONTH', 'EVERY_YEAR', 'ONLY_DAY', 'IN_PARTICULAR_DAY', name='repeat_type_enum'), nullable=False),
+    sa.Column('repeat_type', postgresql.ENUM('EVERY_DAY', 'EVERY_WEEK', 'EVERY_MONTH', 'EVERY_YEAR', 'ONLY_DAY', name='repeat_type_enum'), nullable=False),
     sa.Column('days_of_week', sa.ARRAY(sa.String()), nullable=True),
-    sa.Column('chat_name', sa.String(length=10), nullable=True),
+    sa.Column('days_of_month', sa.ARRAY(sa.Integer()), nullable=True),
+    sa.Column('chat_type', sa.String(length=10), nullable=True),
     sa.Column('telegram_chat_id', sa.BigInteger(), nullable=False),
     sa.Column('group_id', sa.Integer(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=False),

@@ -7,9 +7,8 @@ from sqlalchemy.orm import sessionmaker
 from apscheduler.jobstores.base import JobLookupError
 from scheduler.apscheduler import scheduler
 
-
 from const.callback.delete import DeleteEvent
-from db import Event, engine
+from db import Event, engine, Group
 from handlers.filter.filter import IsPrivate
 from keyboards.keyboards import get_delete_type_keyboard
 from aiogram import F
@@ -22,14 +21,19 @@ Session = sessionmaker(bind=engine)
 """
     Обработчик команды /delete
 """
+
+
 @router.message(Command("delete"), IsPrivate())
 async def delete_command(message: Message):
-    await message.answer(text="Удалить все ивенты. Для удаления отдельных введите команду /list -> 'Все'", reply_markup=get_delete_type_keyboard())
+    await message.answer(text="Удалить все ивенты. Для удаления отдельных введите команду /list -> 'Все'",
+                         reply_markup=get_delete_type_keyboard())
 
 
 """
     Обработчик callback-кнопки удалить 'Все' ивенты
 """
+
+
 @router.callback_query(F.data == DeleteEvent.DELETE_ALL.value)
 async def delete_all_events(callback: CallbackQuery):
     chat_id = callback.message.chat.id
@@ -53,6 +57,8 @@ async def delete_all_events(callback: CallbackQuery):
 """
     Обработчик callback-кнопки 'delete' у каждого отдельного ивента в списке
 """
+
+
 @router.callback_query(F.data.startswith("delete_event:"))
 async def delete_event_by_id(callback: CallbackQuery):
     try:
@@ -93,3 +99,28 @@ def remove_scheduler_jobs(event_id: int):
         except JobLookupError:
             continue
 
+
+@router.callback_query(F.data.startswith("delete_group:"))
+async def delete_event_by_id(callback: CallbackQuery):
+    try:
+        match = re.match(r"delete_group:(\d+)", callback.data)
+        if not match:
+            await callback.message.answer("Неверный формат команды удаления.")
+            return
+
+        group_id = int(match.group(1))
+
+        with Session() as session:
+            group = session.query(Group).filter_by(id=group_id).first()
+            if not group:
+                await callback.message.answer("Группа не найдена или уже удалена.")
+                return
+
+            session.delete(group)
+            session.commit()
+
+        await callback.message.edit_text("🗑️ Группа успешно удалена.", reply_markup=None)
+
+    except Exception as e:
+        logging.error(e)
+        await callback.message.answer("Ошибка при удалении.")

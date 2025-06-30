@@ -20,12 +20,18 @@ config = BotConfig()
 """
     Обработчик инлайн-кнопки. Добавление события в личный чат.
 """
+
+
 @router.callback_query(F.data == Chat.PRIVATE.value)
 async def set_new_event_private(callback: types.CallbackQuery, state: FSMContext):
     with Session() as session:
         try:
             data = await state.get_data()
             user = session.query(User).filter_by(telegram_user_id=callback.from_user.id).first()
+            if not user:
+                user = User(telegram_user_id=callback.from_user.id, username=callback.from_user.username)
+                session.add(user)
+                session.commit()
             new_event = Event(
                 title=data.get("title"),
                 description=data.get("description"),
@@ -36,6 +42,7 @@ async def set_new_event_private(callback: types.CallbackQuery, state: FSMContext
                 remind_time=data.get("remind_at").time(),
                 priority=Priority(data.get("priority")),
                 chat_type=Chat.PRIVATE.value,
+                month=data.get("selected_months"),
                 days_of_week=data.get("selected_days"),
                 days_of_month=data.get("selected_month_days"),
                 telegram_chat_id=callback.message.chat.id,
